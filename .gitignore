@@ -1,3 +1,10 @@
+latentops-env/
+MODELS/
+evaluation/
+DATASETS_REIN/
+*.*~
+#*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
