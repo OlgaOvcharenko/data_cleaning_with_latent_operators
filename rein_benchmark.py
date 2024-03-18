@@ -122,7 +122,6 @@ nnreg_model = create_and_train_classifier(t_dataset,
 print("NN train ", time.time() - start, "sec")
 
 
-
 #Enhanced MODEL===============================================================================
 concatenation_model = Concatenate()(decoder.output)
 enhanced_model = Model(inputs=decoder.input, outputs= nnreg_model(concatenation_model))
@@ -163,33 +162,13 @@ Zs_csv, Ks_csv = predict_on_enhanced(X_dirty, LOP, encoder, decoder, _translate_
 clean_csv = generate_cleaned_data(X_dirty, Zs_csv, Ks_csv, decoder)
 
 
-#TODO refine predicts twice%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Zs_csv, Ks_csv = predict_on_enhanced(clean_csv, LOP, encoder, decoder, _translate_1)
-# clean_csv = generate_cleaned_data(clean_csv, Zs_csv, Ks_csv, decoder)
-
-# Zs_csv, Ks_csv = predict_on_enhanced(clean_csv, LOP, encoder, decoder, _translate_1)
-# clean_csv = generate_cleaned_data(clean_csv, Zs_csv, Ks_csv, decoder)
-
-# Zs_csv, Ks_csv = predict_on_enhanced(clean_csv, LOP, encoder, decoder, _translate_1)
-# clean_csv = generate_cleaned_data(clean_csv, Zs_csv, Ks_csv, decoder)
-
-# Zs_csv, Ks_csv = predict_on_enhanced(clean_csv, LOP, encoder, decoder, _translate_1)
-# clean_csv = generate_cleaned_data(clean_csv, Zs_csv, Ks_csv, decoder)
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 #GENERATE THE RMSE COMPARISION TO REIN#######################################
-#print("C ", dirty_data.iloc[np.where(dirty_data.isna())[0]]) #NaN errors
 rmse_dirty = mean_squared_error(clean_data[numeric_header], dirty_data[numeric_header], squared = False)
-#print('Dirty RMSE: ', rmse_dirty) #squared False return RMSE
-
 
 #EVAL NUMERIC RMSE###########################################################
 df_cleaned = deepcopy(dirty_data)
 df_cleaned[filtered_header] = clean_csv
 rmse = mean_squared_error(clean_data[numeric_header], df_cleaned[numeric_header], squared = False)
-#print('Encoder-decoder RMSE: ', rmse) #squared False return RMSE
-
 
 def _clean_with_error_detector(_df_cleaned, _dirty_data, _detections):
     rows_ = _detections[:, 0] - 2 # rein index starts at 1 and jumps the header
@@ -200,29 +179,9 @@ def _clean_with_error_detector(_df_cleaned, _dirty_data, _detections):
         df_.iloc[r, c] =  _df_cleaned.iloc[r, c]
     return df_
 
-#with ed2 detections -------------------------------------
 rmse_ed2 = 0
-# ed2_detections = pd.read_csv(f'./DATASETS_REIN/{args.dataset}/ed2/detections.csv').to_numpy()
-# df_ed2 = _clean_with_error_detector(df_cleaned, dirty_data, ed2_detections)
-# rmse_ed2 = mean_squared_error(clean_data[numeric_header], df_ed2[numeric_header], squared = False)
-#print('ED2 detections RMSE: ', rmse_ed2)
-
-#with dboost detections -------------------------------------
 rmse_dboost = 0
-# dboost_detections = pd.read_csv(f'./DATASETS_REIN/{args.dataset}/dboost/detections.csv').to_numpy()
-# df_dboost = _clean_with_error_detector(df_cleaned, dirty_data, dboost_detections)
-# rmse_dboost = mean_squared_error(clean_data[numeric_header], df_dboost[numeric_header], squared = False)
-#print('DBOOST detections RMSE: ', rmse_dboost)
-
-
-#with ground truth detections -------------------------------------
 rmse_gt = 0
-# gt_detections = pd.read_csv(f'./DATASETS_REIN/{args.dataset}/actual_errors01.csv').to_numpy()
-# df_gt_cleaned = _clean_with_error_detector(df_cleaned, dirty_data, gt_detections)
-# rmse_gt = mean_squared_error(clean_data[numeric_header], df_gt_cleaned[numeric_header], squared = False)
-#print('GT detections RMSE: ', rmse_gt)
-
-
 
 #EVAL NUMERIC RMSE BY COLUMN################################################
 rmse_by_column_dirty = 0
@@ -249,20 +208,11 @@ if n_num_cols > 0 :
 
 
 #EVAL CATEGORICAL ACCURACY BY COLUMN###################################################
-#print(clean_data.head())
-
 c = reverse_to_input_domain(args.dataset, clean_data, FULL_SCALER, CAT_ENCODER)
 d = reverse_to_input_domain(args.dataset, dirty_data, FULL_SCALER, CAT_ENCODER)
 l = reverse_to_input_domain(args.dataset, df_cleaned, FULL_SCALER, CAT_ENCODER)
-
 pd.options.display.max_columns = None
 pd.options.display.max_rows = None
-#print(c.head())
-#print("C ", l.iloc[np.where(l.isna())[0]]) #NaN errors
-
-#dbo = reverse_to_input_domain(args.dataset, df_dboost, FULL_SCALER, CAT_ENCODER)
-#ed2 = reverse_to_input_domain(args.dataset, df_ed2, FULL_SCALER, CAT_ENCODER)
-#gtd = reverse_to_input_domain(args.dataset, df_gt_cleaned, FULL_SCALER, CAT_ENCODER)
 
 accuracy_categories_dirty = 0
 accuracy_categories = 0
@@ -277,16 +227,8 @@ if n_cat_cols > 0:
     for cat_col in categorical_header:
         acc_dirty = f1_score(c[cat_col], d[cat_col], average = avg_type)
         acc_clean = f1_score(c[cat_col], l[cat_col], average = avg_type)
-        #acc_dboost_detections = f1_score(c[cat_col], dbo[cat_col], average = avg_type)
-        #acc_ed2_detections = f1_score(c[cat_col], ed2[cat_col], average = avg_type)
-        #acc_gt_detections = f1_score(c[cat_col], gtd[cat_col], average = avg_type)
-
         accuracy_categories_dirty += acc_dirty
         accuracy_categories += acc_clean
-        #accuracy_categories_dboost_detections += acc_dboost_detections
-        #accuracy_categories_ed2_detections += acc_ed2_detections
-        #accuracy_categories_gt_detections += acc_gt_detections
-
         print(f'{cat_col}', acc_dirty, " vs ", acc_clean)
 
     accuracy_categories_dirty =  accuracy_categories_dirty / n_cat_cols
@@ -297,29 +239,16 @@ if n_cat_cols > 0:
 
     print(f'TOTAL: {accuracy_categories_dirty} vs  {accuracy_categories} vs ED2 {accuracy_categories_ed2_detections} vs DBOOST {accuracy_categories_dboost_detections} vs GT {accuracy_categories_gt_detections}')
 
-
 dirty_data[filtered_header] = df_cleaned[filtered_header]#clean_csv
 lop_data = reverse_to_input_domain(args.dataset, dirty_data, FULL_SCALER, CAT_ENCODER)
-
-# #Rebuild the whole dataset after cleaning.
-# norm = (MAX - MIN) + 1e-10
-# for i, clean in enumerate(clean_csv):
-#     #reverse normalization
-#     aux = (clean * norm)
-#     clean_csv[i,:] = tf.where(MIN < 0, MIN - aux, MIN + aux)
-#     #clean_csv[i,:] = denormalize_by_min_max(clean, MIN, MAX, full_header)
-
 lop_data.to_csv(f'./DATASETS_REIN/{args.dataset}/LOP.csv', index = False)
-
-
-
 
 rmse_dirty, rmse_repaired = cln.evaluate(f"./DATASETS_REIN/{args.dataset}/clean.csv",
                                          f"./DATASETS_REIN/{args.dataset}/dirty01.csv",
                                          f"./DATASETS_REIN/{args.dataset}/LOP.csv",
                                          args.eval_tuples)
 
-print(rmse_dirty, rmse_repaired)
+print("Dirty vs LOP on REIN BENCHMARK: ", rmse_dirty, rmse_repaired)
 
 #save results for plots
 for_plots = pd.DataFrame({'rmse_numeric':rmse_repaired, 'rmse_gt_detector':rmse_gt, 'rmse_dirty': rmse_dirty,
@@ -330,15 +259,11 @@ for_plots = pd.DataFrame({'rmse_numeric':rmse_repaired, 'rmse_gt_detector':rmse_
                           'accuracy_categorical_dboost_detections': accuracy_categories_dboost_detections,
                           'accuracy_categorical_gt_detections': accuracy_categories_gt_detections}, index = [0])
 for_plots.index.name = "rein"
+
+if not os.path.isdir("./evaluation"):
+    os.makedirs("./evaluation")
+
 for_plots.to_csv(f'./evaluation/rein_rmse_{args.dataset}.csv')
-
-
-
-
-#######################################################################
-
-
-
 
 ########### WRITE DETECTION DICTIONARY ##########
 
@@ -364,42 +289,4 @@ det_idx = det_idx.apply(pd.to_numeric) + [2, 0]
 dummy_column =  np.full((det_idx.shape[0], 1), "JUST A DUMMY VALUE")
 det_idx = pd.DataFrame(np.concatenate([det_idx, dummy_column], axis=1))
 
-
 det_idx.to_csv(f'./DATASETS_REIN/{args.dataset}/detections.csv', header = False, index = False)
-
-
-
-
-
-
-
-
-
-
-# #PLOT=====================================================================
-# #save the results .csv to enable third party plotting.
-
-# df_for_plots = pd.DataFrame({'clean':clean_scores, 'dirty':n_scores, 'lop':en_smart_scores})
-# df_for_plots.index.name = "percentage_dirty"
-# df_for_plots.to_csv(f'./evaluation/{args.experiment}_{args.dataset}.csv')
-
-# df = pd.DataFrame(np.column_stack((n_scores, en_scores, en_smart_scores)), columns=["Default", "LOP", "LOP + Smart"])
-# ax = df.plot(kind = 'bar')#, hatch = ["."])
-
-# labels = [item.get_text() for item in ax.get_xticklabels()]
-
-# aux = -1
-# for p in reversed(percentages_of_noise):
-#     labels[aux] = str(int(p*100)) + "%"
-#     aux -= 1
-
-# plt.axhline(y=df["Default"][0], color='k', linestyle='-')
-# ax.set_xticklabels(labels)
-# ax.set_ylabel('RMSE')
-# ax.set_ylim(bottom=max(np.amin(df["Default"]) - 1,0))
-
-# plt.tight_layout()
-# plt.autoscale()
-
-# plt.show()
-# plt.close()

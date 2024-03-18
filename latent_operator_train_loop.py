@@ -106,7 +106,7 @@ class LatentTrainLoop(object):
 
             # Display and reset metrics at the end of each epoch.
             self.train_acc = self.train_acc_metric.result()
-            self.train_acc_metric.reset_states()
+            self.train_acc_metric.reset_state()
 
             #VALIDATE
             if epoch % 10 == 0:
@@ -115,10 +115,10 @@ class LatentTrainLoop(object):
 
                 self.val_acc = self.val_acc_metric.result()
                 tf.print(self.train_acc,"    ", self.val_acc)
-                self.val_acc_metric.reset_states()
+                self.val_acc_metric.reset_state()
             
         for x_batch_val, y_batch_val in val_dataset:
             self.test_step(x_batch_val, y_batch_val)
 
         self.val_acc = self.val_acc_metric.result()
-        self.val_acc_metric.reset_states()
+        self.val_acc_metric.reset_state()

@@ -15,7 +15,6 @@ parser.add_argument("--legend", action='store_true')
 parser.add_argument("--y_title", action='store_true')
 parser.add_argument("--x_title", action='store_true')
 
-
 args = parser.parse_args()
 
 def plot_basic(dataset, experiment, plot_type = 'point'):
@@ -106,7 +105,6 @@ def _plot_ablation(df, experiment, x_variable, x_title, plot_type, palette):
         g = sns.catplot(data = df, x = x_variable, y = 'value', hue = 'Model', errorbar = None, kind = args.type, palette=palette, linewidth=1.5)
       
     g.legend.remove()
-    #g.refline(y=df['value'][0], color='k')
     plt.xlabel(x_title)
     plt.ylabel('Downstream ML Model RMSE')
     plt.legend(frameon = True, facecolor = 'white')
@@ -125,10 +123,8 @@ def _plot_ablation_rmse(df, experiment, x_variable, x_title, plot_type, palette)
         g = sns.catplot(data = df, x = x_variable, y = 'value', hue = 'Model', errorbar = None, kind = args.type, palette=palette, linewidth=1.5)
       
     g.legend.remove()
-    #g.refline(y=df['value'][0], color='k')
     plt.xlabel(x_title)
     plt.ylabel('RMSE (lowers is better)')
-    #plt.legend(frameon = True, facecolor = 'white')
     plt.autoscale()
     plt.tight_layout()        
     plt.savefig(f'./evaluation/ablation_studies/plots/rmse_{experiment}.svg')
@@ -138,29 +134,15 @@ def plot_ablation_studies_rmse(dataset, plot_type = 'point'):
 
     df_ks = pd.read_csv(f'./evaluation/ablation_studies/rmse_ks_{args.dataset}.csv')[1:]
     df_tuples = pd.read_csv(f'./evaluation/ablation_studies/rmse_tuples_{args.dataset}.csv')
-    #df_epochs = pd.read_csv(f'./evaluation/ablation_studies/rmse_epochs_{args.dataset}.csv')
-    #df_latents = pd.read_csv(f'./evaluation/ablation_studies/rmse_latents_{args.dataset}.csv')
-    #df_equal = pd.read_csv(f'./evaluation/ablation_studies/rmse_equal_{args.dataset}.csv')
-    #df_proportional = pd.read_csv(f'./evaluation/ablation_studies/rmse_proportional_{args.dataset}.csv')
 
     palette = {'lop_numeric': '#00B3AD'}
     
     #melt all columns into value
     df_ks = df_ks.melt(id_vars='param', var_name='Model')
     df_tuples = df_tuples.melt(id_vars='param', var_name='Model')
-    #df_epochs = df_epochs.melt(id_vars='param', var_name='Model')
-    #df_latents = df_latents.melt(id_vars='param', var_name='Model')
-    #df_equal = df_equal.melt(id_vars='param', var_name='Model')
-    #df_proportional= df_proportional.melt(id_vars='param', var_name='Model')
 
     _plot_ablation_rmse(df_ks, f'{args.dataset}_ks', 'param', 'Value of K During Training', plot_type, palette)
-    #_plot_ablation_rmse(df_proportional, f'{args.dataset}_proportional', 'param', 'Number of Ks, Latent is 10x', plot_type, palette)
-    #_plot_ablation_rmse(df_equal, f'{args.dataset}_equal', 'param', 'Latent == K', plot_type, palette)
     _plot_ablation_rmse(df_tuples, f'{args.dataset}_tuples', 'param', 'Number of Training Tuples', plot_type, palette)
-    #_plot_ablation_rmse(df_epochs, f'{args.dataset}_epochs', 'param', 'Number of Training Epochs', plot_type, palette)
-    #_plot_ablation_rmse(df_latents, f'{args.dataset}_latents', 'param', 'Latent Space Dimensionality', plot_type, palette)
-
-
 
 
 def plot_ablation_studies(dataset, plot_type = 'point'):
@@ -188,26 +170,6 @@ def plot_ablation_studies(dataset, plot_type = 'point'):
     _plot_ablation(df_tuples, f'{args.dataset}_tuples', 'param', 'Number of Training Tuples', plot_type, palette)
     _plot_ablation(df_epochs, f'{args.dataset}_epochs', 'param', 'Number of Training Epochs', plot_type, palette)
     _plot_ablation(df_latents, f'{args.dataset}_latents', 'param', 'Latent Space Dimensionality', plot_type, palette)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
 
 def _plot_rein(dataset, data_type = "numeric"):
     df = pd.read_csv(f'./DATASETS_REIN/rein_{dataset}_cleaning_results.csv')
@@ -307,26 +269,6 @@ def plot_rein_categorical(dataset):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def plot_tuple_wise(dataset, data_type = "numeric"):
     df = pd.read_csv(f'./DATASETS_REIN/rein_{dataset}_tuple_wise_cleaning_results.csv')
     df_lop = pd.read_csv(f'./evaluation/ablation_studies/rmse_tuples_{args.dataset}.csv')
@@ -353,15 +295,10 @@ def plot_tuple_wise(dataset, data_type = "numeric"):
     
     g = sns.barplot(data = dss, x = 'train_size', y = 'onlyNum_rmse_repaired', hue = 'ds', errorbar = None,  linewidth=1.5, ax = ax, palette='Spectral')#, marker=['D','o', '*'])
 
-    #plt.axhline(y = df_lop['rmse_dirty'][0], color = 'grey', linestyle = '--') 
     plt.xlabel('Number of Training Tuples')
     plt.ylabel('RMSE (lower is better)')
 
     plt.ylim(0.0 , 1.6)
-    
-    
-    #legend1 = plt.legend(handles = legend_elements, loc='center left', bbox_to_anchor=(1, 0.9), frameon= False)
-    #plt.gca().add_artist(legend1)
 
     plt.legend(loc='best', bbox_to_anchor=(1, 0.8), frameon= False, title = '')
     plt.xticks(rotation=45, ha="right")
@@ -371,19 +308,6 @@ def plot_tuple_wise(dataset, data_type = "numeric"):
     plt.savefig(f'./evaluation/ablation_studies/plots/rein_comparision_tuple_wise_{args.dataset}.svg')
     plt.show()
 
-
-
-
-
-#MUST PASS THE AXIS FOR THE CREATION OF THE PLOT
-# def plot_numeric_for_the_paper(dataset1, dataset2):a
-#     g1 =  _plot_rein(dataset1, "numeric")
-#     g2 =  _plot_rein(dataset2, "numeric")
-
-
-
-
-    
 
 if args.experiment == "vs_dirty_percentages" : 
     plot_basic(args.dataset, args.experiment, args.type)

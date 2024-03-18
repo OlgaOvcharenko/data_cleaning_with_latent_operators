@@ -2,7 +2,7 @@ import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Input, Model, Sequential
-from tensorflow.keras.layers import Dense, Concatenate, Identity
+from tensorflow.keras.layers import Dense, Concatenate
 from tensorflow.keras.optimizers import Adam
 from latent_operators import LatentOperator
 from transformation_in_x import apply_transformation_in_x
@@ -31,18 +31,13 @@ def create_and_train_LOP(train_dataset, val_dataset, x_dim, z_dim, K, K2, T, epo
                     name="my_latops")
     
     concatenation  =  Concatenate()(column_operators)
+    latent_vectors =  Concatenate()(latent_vectors)
     interval_size = 1
-
-
-    latent_vectors = Identity()(latent_vectors)
-
     
     if not os.path.isdir(base_path):
         optimizer = Adam(learning_rate=lr, epsilon=1e-06)
         train_acc_metric = tf.keras.metrics.MeanSquaredError()
         val_acc_metric = tf.keras.metrics.MeanSquaredError()
-
-        #autoencoder = None
         autoencoder = Model(inputs = input_tuple, outputs = [concatenation, latent_vectors])
 
         #MANUAL TRAIN LOOP======================================
@@ -51,13 +46,17 @@ def create_and_train_LOP(train_dataset, val_dataset, x_dim, z_dim, K, K2, T, epo
         L.train_loop(train_dataset, val_dataset)
         
         os.makedirs(base_path)
-        encoder.save_weights(f'{base_path}encoder.ckpt')
-        decoder.save_weights(f'{base_path}decoder.ckpt')
+        #encoder.save_weights(f'{base_path}encoder.ckpt')
+        #decoder.save_weights(f'{base_path}decoder.ckpt')
+
+        encoder.save(f'{base_path}encoder.keras')
+        decoder.save(f'{base_path}decoder.keras')
         print(encoder.summary())
         return encoder, decoder, LOP, float(L.train_acc), float(L.val_acc)
     else:
-        encoder.load_weights(f'{base_path}encoder.ckpt')
-        decoder.load_weights(f'{base_path}decoder.ckpt')
+        encoder.load_weights(f'{base_path}encoder.keras')
+        decoder.load_weights(f'{base_path}decoder.keras')
+        
         LOP = LatentOperator(K, x_dim, K2, interval_size)
         return encoder, decoder, LOP, 0.0, 0.0
 
@@ -71,9 +70,10 @@ def create_and_train_classifier(train_dataset, val_dataset, inp_dim, z_dim, T, n
     nnreg_model.compile(optimizer='adam',loss='mse', metrics=[tf.keras.metrics.RootMeanSquaredError()])
 
     if not os.path.isdir(base_path):
+        os.makedirs(base_path)
         nnreg_model.fit(train_dataset, epochs = n_epochs, verbose = 0)
-        nnreg_model.save_weights(f'{base_path}classifier.ckpt')
+        nnreg_model.save(f'{base_path}classifier.keras')
     else:
-        nnreg_model.load_weights(f'{base_path}classifier.ckpt')
+        nnreg_model.load_weights(f'{base_path}classifier.keras')
 
     return nnreg_model
