@@ -1,8 +1,6 @@
 import tensorflow as tf
 import numpy as np
 import math
-#import tensorflow_addons as tfa
-
 
 @tf.function
 def apply_transformation_in_x(x, shift, shift2, K, K2, T):
@@ -18,8 +16,6 @@ def apply_transformation_in_x(x, shift, shift2, K, K2, T):
     else:
         return _translate_only(x,shift)
 
-
-
 def _translate_only(x,shift): pass
 
 @tf.function
@@ -34,8 +30,6 @@ def _tabular_scaling(x,shift):
         
     return x * diagonal  
 
-
-
 #The data is in the iterval 0,1 so -1 is a valid "NULL"
 #To train on a Benchmark just remove the rows with nmissing values, train, then predict completion for the evaluation
 @tf.function
@@ -45,7 +39,6 @@ def _missing_values(x, shift, K):
     else:   
         x_missing = tf.tensor_scatter_nd_update(x, [[shift-1]], [-1])
         return x_missing
-
 
 
 #The data is in the iterval 0,1 so after nbosie it must stay in the same place
@@ -99,48 +92,4 @@ def include_errors_at_random(x, K, factor):
     x_transformed = tf.where(x == 0, x_transformed - 1e-10, x_transformed) #abs otherwise 0.5 - 1 = -0.5
 
     return x_transformed, missing
-
-
-
-# @tf.function
-# def include_errors_at_random(x, K, factor):
-#     aux = np.ones((x.shape[0], K)) + 1
-#     aux[:,0] = 2.0 * factor #increase chance of no error to be factor fold
-#     logits = tf.math.log(aux)
-#     missing = tf.random.categorical(logits, x.shape[1], dtype = tf.int32)
-
-#     #enable to scal 0 valued columns
-#     x_transformed = tf.where(x == 0, x + 0.0001, x)
-
-#     x_transformed = tf.where(missing == 1, x_transformed * 0.33, x_transformed)
-#     x_transformed = tf.where(missing == 2, x_transformed * 0.66, x_transformed)
-#     x_transformed = tf.where(missing == 3, x_transformed * 1.66, x_transformed)
-#     x_transformed = tf.where(missing == 4, x_transformed * 2.33, x_transformed)
-#     x_transformed = tf.where(missing == 5, 3.0, x_transformed)
-
-#     #transforme back 0 valued columns
-#     x_transformed = tf.where(x == 0, x_transformed - 0.0001, x_transformed) #abs otherwise 0.5 - 1 = -0.5
-
-#     return x_transformed, missing
-
-
-
-
-# def _image_rotation(x, shift, K):
-
-#     #ROTATION
-#     degree = tf.convert_to_tensor(int(360.0/K) * shift)
-#     radians = math.pi/180.0
-#     d = tf.convert_to_tensor(float(degree) * radians) 
-
-#     x_2d = tf.reshape(x,(28,28))
-    
-#     x_2d = tf.expand_dims(x_2d,axis=2)
-
-#     x_2d = tfa.image.rotate(x_2d, d)#,fill_mode = "constant", fill_value = 0.0)
-
-#     x_2d = tf.squeeze(x_2d)
-#     x = tf.reshape(x_2d,x.shape)
-   
-#     return x
 

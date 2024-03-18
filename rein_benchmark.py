@@ -1,10 +1,6 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-#os.environ['CUDA_VISIBLE_DEVICES'] = '1' # choose a single GPU from the cluster
-os.system('export PATH=/etc/alternatives/cuda/bin:$PATH')
-os.system('export LD_LIBRARY_PATH=/usr/local/cuda-11.4/lib64:$LD_LIBRARY_PATH')
-
 
 import csv
 import sys
@@ -12,34 +8,17 @@ import matplotlib.pyplot as plt
 import time
 import tensorflow as tf
 import cleaners as cln
-
-# num_threads = 4
-# os.environ["OMP_NUM_THREADS"] = f"{num_threads}"
-# os.environ["TF_NUM_INTRAOP_THREADS"] = f"{num_threads}"
-# os.environ["TF_NUM_INTEROP_THREADS"] = f"{num_threads}"
-
-# tf.config.threading.set_inter_op_parallelism_threads(
-#     num_threads
-# )
-# tf.config.threading.set_intra_op_parallelism_threads(
-#     num_threads
-# )
-# tf.config.set_soft_device_placement(True)
-
-
-
-from tensorflow.keras import Input, Model, Sequential
-from tensorflow.keras.layers import Dense
 import numpy as np
 import argparse
 import pandas as pd
+
+from tensorflow.keras import Input, Model, Sequential
+from tensorflow.keras.layers import Dense, Concatenate
 from datasets import get_tf_database, load_regression, load_regression_dirty, load_features_and_data, reverse_categorical_columns, reverse_to_input_domain
 from latent_operators import LatentOperator
 from transformation_in_x import apply_transformation_in_x, include_errors_at_random
 from utils import create_and_train_LOP, create_and_train_classifier
-from tensorflow.keras.layers import Concatenate
 from error_detection import predict_on_enhanced, eval_correctly, eval_numeric_rmse
-from multiprocessing.pool import ThreadPool as Pool
 from sklearn.metrics import mean_squared_error, accuracy_score, f1_score
 from copy import deepcopy
 
@@ -49,20 +28,14 @@ parser.add_argument("--learning_rate", type=float, default=0.001)
 parser.add_argument("--latent", type=int, default=240)
 parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--K", type=int, default=4)
-parser.add_argument("--dataset", default='beers')
-#parser.add_argument("--ncols", type=int)
+parser.add_argument("--dataset", default='adult')
 parser.add_argument("--experiment", default='vs_dirty')
 parser.add_argument("--eval_tuples", type=int, default=-1)
 
 args = parser.parse_args()
 
 np.set_printoptions(threshold=sys.maxsize)
-
-#tf.compat.v1.enable_eager_execution()
 print("Is Eager execution?",tf.executing_eagerly())
-
-
-#TODO: CREATE IT IN THE PROPER PLACE
 LOP = None
 
 @tf.function
@@ -78,46 +51,30 @@ def _translate_1(inputs):
 def generate_cleaned_data(x_, Zs, Ks, decoder):
     #avoid decoding Zs when there is no error, just use the value
     xs = tf.squeeze(tf.transpose(decoder(tf.unstack(Zs, axis = 1)), [1,0,2]))
-    x_p = tf.where(Ks == 0, x_, xs)
- 
+    x_p = tf.where(Ks == 0, x_, xs) 
     return x_p
 
 
-
-
 #CONFIGS========================================================
+ds = args.dataset
 T_EXAMPLES = args.eval_tuples
 V_EXAMPLES = args.eval_tuples 
 T_EVAL_EXAMPLES = args.eval_tuples
 V_EVAL_EXAMPLES = args.eval_tuples
-
-
 MODEL_EPOCHS = 200
 K_EPOCHS = args.epochs
 MISSING_REPLACE = '3.0'
-
-ds = args.dataset
-
 T = 'missing_values'
-#T = 'proportional_noise'
-
-#errors = 5
-#K = errors + 1 # +2 for identity and a final circle point
 K = args.K
-K2 = 1
 
-
-#LOAD AIRBNB, NASA or BIKE=============================================================
+#LOAD AIRBNB, NASA or BIKE=====================================
 start = time.time()
 
 #MAX AND MIN FOR THE ALREADY FILTERED SET + TARGET
 x_clean_train, y_clean_train, x_clean, y_clean, MAX, MIN, SCALER, CAT_ENCODER = load_regression(ds, T_EVAL_EXAMPLES, V_EVAL_EXAMPLES, True, normalize_sklearn = True)
 x_dirty_train, y_dirty_train, x_test, y_test = load_regression_dirty(ds, T_EVAL_EXAMPLES, V_EVAL_EXAMPLES, MISSING_REPLACE, SCALER, CAT_ENCODER, True, MAX, MIN, normalize_sklearn = True)
 
-
 print(y_test.shape)
-
-
 COLS = x_clean_train.shape[1]
 print("# COLUMNS:", COLS)
 
@@ -138,20 +95,18 @@ encoder, decoder, LOP, t_acc, v_acc = create_and_train_LOP(train_dataset,
                                                            COLS,
                                                            args.latent,
                                                            K,
-                                                           K2,
+                                                           1,
                                                            T,
                                                            epochs=args.epochs,
                                                            model_name=args.dataset)
 print("LOP ",time.time() - start, "sec", "Train loss:", t_acc," VAL loss:" , v_acc)
-
 
 for el in encoder.layers:
      el.trainable = False
 for el in decoder.layers:
     el.trainable = False
 
-
-    
+   
 #Default Classifier MODEL========================================================================
 t_dataset = get_tf_database(x_clean_train, y_clean_train, args.batch_size)
 v_dataset = get_tf_database(x_clean, y_clean, args.batch_size)    
@@ -168,11 +123,8 @@ print("NN train ", time.time() - start, "sec")
 
 
 
-
-
 #Enhanced MODEL===============================================================================
 concatenation_model = Concatenate()(decoder.output)
-
 enhanced_model = Model(inputs=decoder.input, outputs= nnreg_model(concatenation_model))
 enhanced_model.compile(optimizer='adam',loss='mse', metrics=[tf.keras.metrics.RootMeanSquaredError()])
 
@@ -188,7 +140,6 @@ print("# tuples for test:", x_test.shape[0])
 
 percentages_of_noise = [0.0]
 
-
 # clean_scores.append(nnreg_model.evaluate(x_clean, y_clean)[1])
 # n_scores.append(nnreg_model.evaluate(x_test, y_test)[1]) #dirty score
 # Zs, Ks = predict_on_enhanced(x_test, LOP, encoder, decoder, _translate_1)
@@ -199,9 +150,6 @@ percentages_of_noise = [0.0]
 
 
 
-
-
-
 ############ WRITE CLEAN DATA #################
 headers,  target_name, dirty_data, _, data_with_y, _, clean_data, FULL_SCALER, CAT_ENCODER = load_features_and_data(ds, T_EVAL_EXAMPLES, V_EVAL_EXAMPLES, MISSING_REPLACE, SCALER, CAT_ENCODER, True, MAX, MIN, normalize_sklearn = True)
 full_header = headers["full_header"]
@@ -209,10 +157,6 @@ header_with_y = headers["filtered_header_with_y"]
 filtered_header = headers["filtered_header"]
 numeric_header = headers["numeric_header"] 
 categorical_header = headers["categorical_header"]
-
-#print(dirty_data.dtypes, clean_data.dtypes)
-#print(dirty_data.head, data_with_y.head)
-
 
 X_dirty = deepcopy(data_with_y[filtered_header]).to_numpy()
 Zs_csv, Ks_csv = predict_on_enhanced(X_dirty, LOP, encoder, decoder, _translate_1)
@@ -245,7 +189,6 @@ df_cleaned = deepcopy(dirty_data)
 df_cleaned[filtered_header] = clean_csv
 rmse = mean_squared_error(clean_data[numeric_header], df_cleaned[numeric_header], squared = False)
 #print('Encoder-decoder RMSE: ', rmse) #squared False return RMSE
-
 
 
 def _clean_with_error_detector(_df_cleaned, _dirty_data, _detections):

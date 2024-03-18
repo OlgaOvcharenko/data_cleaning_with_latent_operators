@@ -25,9 +25,7 @@ from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.svm import SVC
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import classification_report, accuracy_score
-
 import sklearn.neighbors._base
-
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import precision_recall_fscore_support
@@ -64,16 +62,6 @@ def evaluate(gtDF, dirtyDF, cleanedDF, n_tuples = -1):
         dirtyDF = pd.read_csv(f"{dirtyDF}", sep=",", encoding="utf-8")[:n_tuples]
         cleanedDF = pd.read_csv(f"{cleanedDF}", sep=",", encoding="utf-8")[:n_tuples]
 
-
-        #print(n_tuples, groundTruthDF.shape, dirtyDF.shape, cleanedDF.shape)
-
-        #cleanedDF["birthday"] = dirtyDF["birthday"]
-        #cleanedDF["date"] = dirtyDF["date"]
-        
-        #print(groundTruthDF[:n_tuples][0:4].head(),
-        #      dirtyDF[:n_tuples][0:4].head(),
-        #      cleanedDF[:n_tuples][0:4].head())
-        
         # Get numerical and categorical columns of the ground truth
         groundTruthDF = groundTruthDF.apply(pd.to_numeric, errors="ignore")
         gt_num_columns = groundTruthDF.select_dtypes(include="number").columns
@@ -102,10 +90,6 @@ def evaluate(gtDF, dirtyDF, cleanedDF, n_tuples = -1):
         # scale, remove nan values and calculate rmse for repaired dataset
         y_pred = scaler.transform(y_cleaned).flatten().astype(float)
         y_pred = np.nan_to_num(y_pred)
-
-        #print(y_true.shape, y_pred.shape, y_dirty.shape)
-        #print(y_true, y_pred, y_dirty)
-        
         
         rmse_repaired = mean_squared_error(y_true, y_pred, squared=False)
 
@@ -116,7 +100,3 @@ def evaluate(gtDF, dirtyDF, cleanedDF, n_tuples = -1):
 
 
         return rmse_dirty, rmse_repaired
-
-
-
-#rmse_dirty, rmse_repaired = evaluate(f"./{args.dataset}/clean.csv", f"./{args.dataset}/dirty01.csv", f"./{args.dataset}/LOP.csv")
