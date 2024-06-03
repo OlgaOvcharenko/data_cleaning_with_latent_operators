@@ -22,7 +22,9 @@ def create_and_train_LOP(train_dataset, val_dataset, x_dim, z_dim, K, K2, T, epo
 
     column_operators = []
     for i in range(x_dim):
-        d_bt = Dense(128, activation = "relu")(latent_vectors[i])
+        #d_bt = Dense(128, activation = "relu")(latent_vectors[i])
+        d_bt = Dense(128, activation = "tanh")(latent_vectors[i])
+        
         d_out = Dense(1)(d_bt) #1 LOP per column
         column_operators.append(d_out)
 

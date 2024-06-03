@@ -1,4 +1,4 @@
-latentops-env/
+*-env/
 MODELS/
 evaluation/
 DATASETS_REIN/

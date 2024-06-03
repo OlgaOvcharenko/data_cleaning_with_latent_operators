@@ -28,7 +28,7 @@ from multiprocessing.pool import ThreadPool as Pool
 from sklearn.metrics import mean_squared_error, accuracy_score
 
 parser = argparse.ArgumentParser(description="Disentangled Latent Space Operator for Data Engineering")
-parser.add_argument("--epochs", type=int, default=2000)
+parser.add_argument("--epochs", type=int, default=200)
 parser.add_argument("--learning_rate", type=float, default=0.001)
 parser.add_argument("--latent", type=int, default=240)
 parser.add_argument("--batch_size", type=int, default=8)
@@ -38,6 +38,7 @@ parser.add_argument("--ncols", type=int)
 parser.add_argument("--experiment", default='vs_dirty')
 parser.add_argument("--metric", default='rmse')
 parser.add_argument("--training_tuples", type=int, default=-1)
+parser.add_argument("--eval_tuples", type=int, default=40000)
 
 
 args = parser.parse_args()
@@ -97,16 +98,16 @@ val_clean_dataset = get_tf_database(x_clean, x_clean, args.batch_size)
 
 
 ##################TRAIN ALL MODELS WITH VARYING Ks and N TUPLES#############################
-list_of_ks = [1, 4, 5, 6, 12, 15, 20, 30, 60]
-list_of_epochs = [10, 50, 100, 200, 300, 500]
-list_of_latents = [12, 24, 36, 60, 120, 180, 240]
+list_of_ks = [1, 4, 5, 6, 10, 12, 15, 20, 30, 60]
+list_of_epochs = [10, 20, 40, 50, 60, 80,  100, 120, 180, 240, 360, 512]
+list_of_latents = [12, 24, 36, 60, 72, 84, 120, 144, 180, 240, 324, 372, 480]#, 960]
 
 if args.dataset == 'beers':
     list_of_training_size = [20, 50, 100, 200, 300, 600]
 elif args.dataset == 'smart_factory':
     list_of_training_size = [20, 50, 100, 200, 300, 600, 1000, 1800,  3000, 4000, 5000, 7000, 10000, 14000]
 else:
-    list_of_training_size = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000]
+    list_of_training_size = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000]#, 45000]
 
 
 list_of_models_by_tuples = {}
@@ -116,6 +117,8 @@ list_of_models_by_latent = {}
 list_of_models_proportional = {}
 list_of_models_K_equal_latent = {}
 
+train_times_k = []
+train_times_latent = []
 
 
 tuples_dataset = np.concatenate(([x_clean_train, x_clean]))
@@ -160,6 +163,8 @@ train_dataset = get_tf_database(x_clean_train[0:args.training_tuples], x_clean_t
 
 
 for latent in list_of_latents:
+    st = time.time()
+    
     encoder, decoder, LOP, t_acc, v_acc = create_and_train_LOP(train_dataset,
                                                            val_clean_dataset,
                                                            COLS,
@@ -182,6 +187,7 @@ for latent in list_of_latents:
                                     "t_acc": t_acc ,
                                     "v_acc" : v_acc}
     #print(LOP.n_rotations, LOP.interval, LOP.n_columns)
+    train_times_latent.append(time.time() - st)
 
 
 
@@ -211,6 +217,8 @@ for epoch in list_of_epochs:
     
 
 for k in list_of_ks:
+
+    st = time.time()
     
     encoder, decoder, LOP, t_acc, v_acc = create_and_train_LOP(train_dataset,
                                                            val_clean_dataset,
@@ -233,6 +241,8 @@ for k in list_of_ks:
                                     "LOP": LOP,
                                     "t_acc": t_acc ,
                                     "v_acc" : v_acc}
+
+    train_times_k.append(time.time() - st)
     #print(LOP.n_rotations, LOP.interval, LOP.n_columns)
 
 
@@ -297,6 +307,15 @@ for k_equal in list_of_latents:
 
 
 
+
+
+
+
+
+
+
+
+
 #Default Classifier MODEL========================================================================
 t_dataset = get_tf_database(x_clean_train, y_clean_train, args.batch_size)
 v_dataset = get_tf_database(x_clean, y_clean, args.batch_size)    
@@ -314,10 +333,25 @@ print("NN train ", time.time() - start, "sec")
 
 
 
+
+#save training performance
+df_time_k = pd.DataFrame(train_times_k, index = list_of_ks, columns = ['sec'])
+df_time_k.index.name = "param"
+df_time_k.to_csv(f'./evaluation/ablation_studies/time_to_train_k_{args.dataset}.csv')
+
+df_time_latent = pd.DataFrame(train_times_latent, index = list_of_latents, columns = ['sec'])
+df_time_latent.index.name = "param"
+df_time_latent.to_csv(f'./evaluation/ablation_studies/time_to_train_latent_{args.dataset}.csv')
+
+
+####################################################################################################################################
 print("RESULTS ONLY")
 
 clean_score = nnreg_model.evaluate(x_clean, y_clean)[1]
 n_score = nnreg_model.evaluate(x_test, y_test)[1] #dirty score
+
+import psutil
+process = psutil.Process()
 
 
 
@@ -325,31 +359,38 @@ def _evaluate_ablation_model_on_rmse(list_of_models, list_of_params, experiment_
     global LOP
 
     list_of_scores = []
-    dirty = dirty_data[HEADERS["filtered_header"]]
+    indexes_for_pandas = []
+    dirty = dirty_data[HEADERS["filtered_header"]]#.iloc[:args.eval_tuples]
     #clean = clean_data[HEADERS["filtered_header"]]
 
     for m in list_of_params:
+        start = time.time()
+        
         model = list_of_models[f"model_{m}"]
         LOP = model["LOP"]
         Zs, Ks = predict_on_enhanced(dirty.to_numpy(), model["LOP"], model["encoder"], model["decoder"], _translate_1)
+
+        d = eval_numeric_rmse(dirty, Zs, Ks, model["decoder"])
+        dirty_data[HEADERS["filtered_header"]] = d
+
         
-               
-        dirty_data[HEADERS["filtered_header"]] = eval_numeric_rmse(dirty, Zs, Ks, model["decoder"])
         lop_data = reverse_to_input_domain(args.dataset, dirty_data, FULL_SCALER, CAT_ENCODER)
         lop_data.to_csv(f'./DATASETS_REIN/{args.dataset}/LOP_ablation.csv', index = False)
 
         _, rmse_repaired = cln.evaluate(f"./DATASETS_REIN/{args.dataset}/clean.csv",
                                         f"./DATASETS_REIN/{args.dataset}/dirty01.csv",
                                         f"./DATASETS_REIN/{args.dataset}/LOP_ablation.csv",
-                                        n_tuples = 19999)
+                                        n_tuples = args.eval_tuples)
 
         print(rmse_repaired)
         
-        list_of_scores.append({"lop_numeric": rmse_repaired})
+        list_of_scores.append({"lop_numeric": rmse_repaired, "inference_time": time.time() -  start, "inference_memory": process.memory_info().rss / 1000000.0})  # in MBs
 
-    df_for_plots = pd.DataFrame.from_records(list_of_scores, index = list_of_params)
-    df_for_plots.index.name = "param"
-    df_for_plots.to_csv(f'./evaluation/ablation_studies/rmse_{experiment_name}.csv')
+
+        indexes_for_pandas.append(m)
+        df_for_plots = pd.DataFrame.from_records(list_of_scores, index = indexes_for_pandas)
+        df_for_plots.index.name = "param"
+        df_for_plots.to_csv(f'./evaluation/ablation_studies/rmse_{experiment_name}.csv')
 
 
 
@@ -363,6 +404,8 @@ def _evaluate_ablation_model_on_domwnstream_task(list_of_models, list_of_params,
     list_of_scores = []
 
     for m in list_of_params:
+        start = time.time()
+        
         model = list_of_models[f"model_{m}"]
 
         LOP = model["LOP"]        
@@ -372,11 +415,13 @@ def _evaluate_ablation_model_on_domwnstream_task(list_of_models, list_of_params,
         Zs, Ks = predict_on_enhanced(x_test, model["LOP"], model["encoder"], model["decoder"], _translate_1)
         detections = eval_correctly(x_test, y_test, Zs, Ks, model["decoder"], nnreg_model)
 
-        list_of_scores.append({"clean": clean_score, "dirty": n_score, "lop":detections})
-        
+        list_of_scores.append({"clean": clean_score, "dirty": n_score, "lop":detections, "inference_time":time.time() -  start})
+
     df_for_plots = pd.DataFrame.from_records(list_of_scores, index = list_of_params)
     df_for_plots.index.name = "param"
     df_for_plots.to_csv(f'./evaluation/ablation_studies/downstream_{experiment_name}.csv')
+        
+
 
 
 
@@ -398,8 +443,14 @@ if args.metric == "downstream":
 
 else:
     #_evaluate_ablation_model_on_rmse(list_of_models_by_tuples, list_of_training_size, f'tuples_{args.dataset}')
+    #print("tuples done.")
     #_evaluate_ablation_model_on_rmse(list_of_models_K_equal_latent, list_of_latents, f'equal_{args.dataset}')
     #_evaluate_ablation_model_on_rmse(list_of_models_proportional, list_of_ks, f'proportional_{args.dataset}')
-    _evaluate_ablation_model_on_rmse(list_of_models_by_epoch, list_of_epochs, f'epochs_{args.dataset}')
-    _evaluate_ablation_model_on_rmse(list_of_models_by_latent, list_of_latents, f'latents_{args.dataset}')
-    #_evaluate_ablation_model_on_rmse(list_of_models_by_ks, list_of_ks, f'ks_{args.dataset}')
+
+
+    #_evaluate_ablation_model_on_rmse(list_of_models_by_epoch, list_of_epochs, f'epochs_{args.dataset}')
+    #print("epochs done.")
+    #_evaluate_ablation_model_on_rmse(list_of_models_by_latent, list_of_latents, f'latents_{args.dataset}')
+    #print("latent done.")
+    _evaluate_ablation_model_on_rmse(list_of_models_by_ks, list_of_ks, f'ks_{args.dataset}')
+    print("ks done.")

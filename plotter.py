@@ -132,17 +132,22 @@ def _plot_ablation_rmse(df, experiment, x_variable, x_title, plot_type, palette)
 
 def plot_ablation_studies_rmse(dataset, plot_type = 'point'):
 
-    df_ks = pd.read_csv(f'./evaluation/ablation_studies/rmse_ks_{args.dataset}.csv')[1:]
-    df_tuples = pd.read_csv(f'./evaluation/ablation_studies/rmse_tuples_{args.dataset}.csv')
+    df_ks = pd.read_csv(f'./evaluation/ablation_studies/rmse_ks_{args.dataset}.csv', usecols=["param", "lop_numeric"])[1:]
+    df_tuples = pd.read_csv(f'./evaluation/ablation_studies/rmse_tuples_{args.dataset}.csv', usecols=["param", "lop_numeric"])
+    df_latent = pd.read_csv(f'./evaluation/ablation_studies/rmse_latents_{args.dataset}.csv',usecols=["param", "lop_numeric"])
 
+
+    
     palette = {'lop_numeric': '#00B3AD'}
     
     #melt all columns into value
     df_ks = df_ks.melt(id_vars='param', var_name='Model')
     df_tuples = df_tuples.melt(id_vars='param', var_name='Model')
+    df_latent = df_latent.melt(id_vars='param', var_name='Model')
 
     _plot_ablation_rmse(df_ks, f'{args.dataset}_ks', 'param', 'Value of K During Training', plot_type, palette)
     _plot_ablation_rmse(df_tuples, f'{args.dataset}_tuples', 'param', 'Number of Training Tuples', plot_type, palette)
+    _plot_ablation_rmse(df_latent, f'{args.dataset}_latent', 'param', 'Dimensionality of the Latent Space', plot_type, palette)
 
 
 def plot_ablation_studies(dataset, plot_type = 'point'):
