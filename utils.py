@@ -8,6 +8,24 @@ from latent_operators import LatentOperator
 from transformation_in_x import apply_transformation_in_x
 from latent_operator_train_loop import LatentTrainLoop
 
+
+
+#CHECK IF ALL DIRECTORIES HAVE BEEN CREATED########################
+
+def _check_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+_check_dir('./MODELS')
+_check_dir('./evaluation')
+_check_dir('./evaluation/ablation_studies')
+_check_dir('./evaluation/ablation_studies/plots')
+
+###################################################################
+
+
+
+
 def create_and_train_LOP(train_dataset, val_dataset, x_dim, z_dim, K, K2, T, epochs= 100, lr = 0.001, model_name="test"):
 
     base_path = f'./MODELS/{model_name}/{T}_{x_dim}_{z_dim}_{K}_epochs_{epochs}/'

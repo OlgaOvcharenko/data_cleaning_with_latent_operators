@@ -98,7 +98,7 @@ val_clean_dataset = get_tf_database(x_clean, x_clean, args.batch_size)
 
 
 ##################TRAIN ALL MODELS WITH VARYING Ks and N TUPLES#############################
-list_of_ks = [1, 4, 5, 6, 10, 12, 15, 20, 30, 60]
+list_of_ks = [1, 4, 5, 6, 10, 15, 20, 24, 30, 40, 60]
 list_of_epochs = [10, 20, 40, 50, 60, 80,  100, 120, 180, 240, 360, 512]
 list_of_latents = [12, 24, 36, 60, 72, 84, 120, 144, 180, 240, 324, 372, 480]#, 960]
 
@@ -420,8 +420,6 @@ def _evaluate_ablation_model_on_domwnstream_task(list_of_models, list_of_params,
     df_for_plots = pd.DataFrame.from_records(list_of_scores, index = list_of_params)
     df_for_plots.index.name = "param"
     df_for_plots.to_csv(f'./evaluation/ablation_studies/downstream_{experiment_name}.csv')
-        
-
 
 
 

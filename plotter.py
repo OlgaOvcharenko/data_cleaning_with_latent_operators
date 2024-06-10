@@ -117,12 +117,13 @@ def _plot_ablation(df, experiment, x_variable, x_title, plot_type, palette):
 def _plot_ablation_rmse(df, experiment, x_variable, x_title, plot_type, palette):
 
     if plot_type == 'point':
-        g = sns.catplot(data = df, x = x_variable, y = 'value', hue = 'Model', errorbar = None, marker=['D','o', '*'], kind = args.type, palette=palette, linewidth=1.5)
+       # g = sns.catplot(data = df, x = x_variable, y = 'value', hue = 'Model', errorbar = None, marker=['D','o', '*'], kind = args.type, palette=palette, linewidth=1.5)
+        g = sns.lineplot(data = df, x = x_variable, y = 'value', hue = 'Model', errorbar = None, palette=palette, linewidth=1.5)
         #plt.grid()
     else:
         g = sns.catplot(data = df, x = x_variable, y = 'value', hue = 'Model', errorbar = None, kind = args.type, palette=palette, linewidth=1.5)
       
-    g.legend.remove()
+    g.legend_.remove()
     plt.xlabel(x_title)
     plt.ylabel('RMSE (lowers is better)')
     plt.autoscale()
@@ -135,7 +136,7 @@ def plot_ablation_studies_rmse(dataset, plot_type = 'point'):
     df_ks = pd.read_csv(f'./evaluation/ablation_studies/rmse_ks_{args.dataset}.csv', usecols=["param", "lop_numeric"])[1:]
     df_tuples = pd.read_csv(f'./evaluation/ablation_studies/rmse_tuples_{args.dataset}.csv', usecols=["param", "lop_numeric"])
     df_latent = pd.read_csv(f'./evaluation/ablation_studies/rmse_latents_{args.dataset}.csv',usecols=["param", "lop_numeric"])
-
+    df_epochs = pd.read_csv(f'./evaluation/ablation_studies/rmse_epochs_{args.dataset}.csv',usecols=["param", "lop_numeric"])
 
     
     palette = {'lop_numeric': '#00B3AD'}
@@ -144,10 +145,13 @@ def plot_ablation_studies_rmse(dataset, plot_type = 'point'):
     df_ks = df_ks.melt(id_vars='param', var_name='Model')
     df_tuples = df_tuples.melt(id_vars='param', var_name='Model')
     df_latent = df_latent.melt(id_vars='param', var_name='Model')
+    df_epochs = df_epochs.melt(id_vars='param', var_name='Model')
+
 
     _plot_ablation_rmse(df_ks, f'{args.dataset}_ks', 'param', 'Value of K During Training', plot_type, palette)
     _plot_ablation_rmse(df_tuples, f'{args.dataset}_tuples', 'param', 'Number of Training Tuples', plot_type, palette)
     _plot_ablation_rmse(df_latent, f'{args.dataset}_latent', 'param', 'Dimensionality of the Latent Space', plot_type, palette)
+    _plot_ablation_rmse(df_epochs, f'{args.dataset}_epochs', 'param', 'Number of Training Epochs', plot_type, palette)
 
 
 def plot_ablation_studies(dataset, plot_type = 'point'):
@@ -314,6 +318,52 @@ def plot_tuple_wise(dataset, data_type = "numeric"):
     plt.show()
 
 
+
+def plot_time_vs_rmse(dataset):
+
+    df_ks = pd.read_csv(f'./evaluation/ablation_studies/rmse_ks_{args.dataset}.csv', usecols=["param", "lop_numeric"])[1:]
+    df_latent = pd.read_csv(f'./evaluation/ablation_studies/rmse_latents_{args.dataset}.csv',usecols=["param", "lop_numeric"])
+    time_ks = pd.read_csv(f'./evaluation/ablation_studies/time_to_train_k_{args.dataset}.csv',usecols=["param", "sec"])
+    time_latent = pd.read_csv(f'./evaluation/ablation_studies/time_to_train_latent_{args.dataset}.csv', usecols=["param", "sec"])
+
+    #in minutes
+    time_latent['sec'] = time_latent['sec'] / 60
+    time_ks['sec'] = time_ks['sec'] / 60
+
+    #plot bot hi nthe same axis (RMSE vs time)
+    time_latent = pd.concat([time_latent, df_latent['lop_numeric'] * 20], axis = 1)
+    time_ks = pd.concat([time_ks, df_ks['lop_numeric'] * 10], axis = 1)
+    
+    palette = {'lop_numeric': '#00B3AD', 'sec': '#FFB3AD'}
+    
+    #melt all columns into value
+    df_ks = df_ks.melt(id_vars='param', var_name='Model')
+    df_latent = df_latent.melt(id_vars='param', var_name='Model')
+    time_ks = time_ks.melt(id_vars='param', var_name='Model')
+    time_latent = time_latent.melt(id_vars='param', var_name='Model')
+
+    
+    g = sns.catplot(data = time_latent, x = 'param'  , y = 'value', hue = 'Model', errorbar = None, marker=['D','o', '*'], kind = args.type, palette=palette, linewidth=1.5)
+    
+    g.legend.remove()
+    plt.xlabel('Dimensionality of the latent space (per model)')
+    plt.ylabel('Time to train in minutes')
+    plt.autoscale()
+    plt.tight_layout()        
+    plt.savefig(f'./evaluation/ablation_studies/plots/time_latent_{args.dataset}.svg')
+    plt.show()
+
+    g = sns.catplot(data = time_ks, x = 'param'  , y = 'value', hue = 'Model', errorbar = None, marker=['D','o', '*'], kind = args.type, palette=palette, linewidth=1.5)
+
+    g.legend.remove()
+    plt.xlabel('Number of K errors for training')
+    plt.ylabel('Time to train in minutes')
+    plt.autoscale()
+    plt.tight_layout()        
+    plt.savefig(f'./evaluation/ablation_studies/plots/time_ks_{args.dataset}.svg')
+    plt.show()
+
+
 if args.experiment == "vs_dirty_percentages" : 
     plot_basic(args.dataset, args.experiment, args.type)
 elif args.experiment == "vs_dirty" : 
@@ -328,3 +378,5 @@ elif args.experiment == "compare_to_rein_categorical":
     plot_rein_categorical(args.dataset)
 elif args.experiment == "tuplewise":
     plot_tuple_wise(args.dataset)
+elif args.experiment == "performance":
+    plot_time_vs_rmse(args.dataset)

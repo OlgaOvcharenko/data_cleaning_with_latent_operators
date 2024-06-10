@@ -39,12 +39,12 @@ scikit-learn==1.4.1.post1
 scipy==1.12.0
 setuptools==69.2.0
 six==1.16.0
-tensorboard==2.16.2
+tensorboard
 tensorboard-data-server==0.7.2
-tensorflow==2.16.1
-tensorflow-intel==2.16.1
+tensorflow
+tensorflow-intel
 termcolor==2.4.0
-tf_keras==2.16.0
+tf_keras
 threadpoolctl==3.3.0
 typing_extensions==4.10.0
 tzdata==2024.1
