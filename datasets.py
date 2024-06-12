@@ -27,7 +27,8 @@ def _get_data_config():
         "airbnb": {"id_cols": [], "cat_cols": ["LocationName", "Rating"], "date_cols": [], "target": "Price"},
         "soccer_OR": {"id_cols": ['id_x'], "cat_cols": ["player_name", "attacking_work_rate", "preferred_foot"], "date_cols": ["date", "birthday"], "target": "overall_rating"},
         "soccer_PLAYER": {"id_cols": ['id_x'], "cat_cols": ["player_name", "attacking_work_rate", "preferred_foot"], "date_cols": ["date", "birthday"], "target": "player_name"},
-        "nasa": {"id_cols": [], "cat_cols": [], "date_cols": [], "target": "sound_pressure_level"}
+        "nasa": {"id_cols": [], "cat_cols": [], "date_cols": [], "target": "sound_pressure_level"},
+        "har": {"id_cols": ["Index"], "cat_cols": ["gt"], "date_cols": [], "target": "gt"}
     }
 
 
