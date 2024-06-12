@@ -187,7 +187,8 @@ for latent in list_of_latents:
                                     "t_acc": t_acc ,
                                     "v_acc" : v_acc}
     #print(LOP.n_rotations, LOP.interval, LOP.n_columns)
-    train_times_latent.append(time.time() - st)
+    if (time.time() - st) > 8: #avoid saving loading times, which are usually aroun 1 to 3 sec
+        train_times_latent.append(time.time() - st)
 
 
 
@@ -242,7 +243,8 @@ for k in list_of_ks:
                                     "t_acc": t_acc ,
                                     "v_acc" : v_acc}
 
-    train_times_k.append(time.time() - st)
+    if (time.time() - st) > 8: #avoid saving loading times, which are usually aroun 1 to 3 sec
+        train_times_k.append(time.time() - st)
     #print(LOP.n_rotations, LOP.interval, LOP.n_columns)
 
 
@@ -448,7 +450,7 @@ else:
 
     #_evaluate_ablation_model_on_rmse(list_of_models_by_epoch, list_of_epochs, f'epochs_{args.dataset}')
     #print("epochs done.")
-    #_evaluate_ablation_model_on_rmse(list_of_models_by_latent, list_of_latents, f'latents_{args.dataset}')
-    #print("latent done.")
+    _evaluate_ablation_model_on_rmse(list_of_models_by_latent, list_of_latents, f'latents_{args.dataset}')
+    print("latent done.")
     _evaluate_ablation_model_on_rmse(list_of_models_by_ks, list_of_ks, f'ks_{args.dataset}')
     print("ks done.")

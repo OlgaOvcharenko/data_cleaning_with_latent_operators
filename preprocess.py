@@ -2,6 +2,26 @@ from datetime import datetime
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 import numpy as np
+import os
+
+
+#CHECK IF ALL DIRECTORIES HAVE BEEN CREATED########################
+
+def _check_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+main_path = os.getcwd()
+_check_dir(f'{main_path}/MODELS')
+_check_dir(f'{main_path}/evaluation')
+_check_dir(f'{main_path}/evaluation/plots')
+_check_dir(f'{main_path}/evaluation/ablation_studies')
+_check_dir(f'{main_path}/evaluation/ablation_studies/plots')
+
+
+###################################################################
+
+
 
 def _encode_cat(X_c):
     data = X_c.copy()

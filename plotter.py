@@ -6,6 +6,7 @@ from matplotlib.lines import Line2D
 import numpy as np
 import glob
 import os
+import preprocess
 
 parser = argparse.ArgumentParser(description="Disentangled Latent Space Operator for Data Engineering")
 parser.add_argument("--dataset", default='adult')
