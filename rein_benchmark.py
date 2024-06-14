@@ -19,7 +19,7 @@ from latent_operators import LatentOperator
 from transformation_in_x import apply_transformation_in_x, include_errors_at_random
 from utils import create_and_train_LOP, create_and_train_classifier
 from error_detection import predict_on_enhanced, eval_correctly, eval_numeric_rmse
-from sklearn.metrics import mean_squared_error, accuracy_score, f1_score
+from sklearn.metrics import mean_squared_error, accuracy_score, f1_score, precision_score, recall_score
 from copy import deepcopy
 
 parser = argparse.ArgumentParser(description="Disentangled Latent Space Operator for Data Engineering")
@@ -214,30 +214,60 @@ l = reverse_to_input_domain(args.dataset, df_cleaned, FULL_SCALER, CAT_ENCODER)
 pd.options.display.max_columns = None
 pd.options.display.max_rows = None
 
+
+
+precision_categories_dirty = 0
+precision_categories = 0
+recall_categories_dirty = 0
+recall_categories = 0
 accuracy_categories_dirty = 0
 accuracy_categories = 0
 accuracy_categories_gt_detections = 0
 accuracy_categories_dboost_detections = 0
 accuracy_categories_ed2_detections = 0
 n_cat_cols = len(categorical_header) #- 1 #beer_name
-avg_type = 'micro'
+
+
+
+
+def _cat_metric(metric, clean, dirty, repaired):
+    avg_type = "weighted"    
+    #dirty, clean
+    return metric(clean, dirty, average = avg_type, zero_division = 0.0), metric(clean, repaired, average = avg_type, zero_division = 0.0) 
+
+
 
 if n_cat_cols > 0:
-    print("\n  Accuracy (more is better) on Categorical Columns Dirty vs Clean")
+    print("\n  F1 (more is better) on Categorical Columns Dirty vs Clean")
     for cat_col in categorical_header:
-        acc_dirty = f1_score(c[cat_col], d[cat_col], average = avg_type)
-        acc_clean = f1_score(c[cat_col], l[cat_col], average = avg_type)
-        accuracy_categories_dirty += acc_dirty
-        accuracy_categories += acc_clean
-        print(f'{cat_col}', acc_dirty, " vs ", acc_clean)
+        f1_dirty, f1_clean = _cat_metric(f1_score, c[cat_col], d[cat_col], l[cat_col])
+        pre_dirty, pre_clean = _cat_metric(precision_score, c[cat_col], d[cat_col], l[cat_col])
+        rec_dirty, rec_clean = _cat_metric(recall_score, c[cat_col], d[cat_col], l[cat_col])
+
+        accuracy_categories_dirty += f1_dirty
+        precision_categories_dirty += pre_dirty
+        recall_categories_dirty += rec_dirty
+
+        accuracy_categories += f1_clean        
+        precision_categories += pre_clean
+        recall_categories += rec_clean
+
+        print(f'F1 {cat_col}', f1_dirty, " vs ", f1_clean)
+        print(f'Precision {cat_col}', pre_dirty, " vs ", pre_clean)
+        print(f'Recall {cat_col}', rec_dirty, " vs ", rec_clean)
 
     accuracy_categories_dirty =  accuracy_categories_dirty / n_cat_cols
     accuracy_categories =  accuracy_categories / n_cat_cols
+    precision_categories_dirty =  precision_categories_dirty / n_cat_cols
+    precision_categories =  precision_categories / n_cat_cols
+    recall_categories_dirty =  recall_categories_dirty / n_cat_cols
+    recall_categories =  recall_categories / n_cat_cols
+    
     accuracy_categories_dboost_detections =  accuracy_categories_dboost_detections / n_cat_cols
     accuracy_categories_ed2_detections =  accuracy_categories_ed2_detections / n_cat_cols
     accuracy_categories_gt_detections =  accuracy_categories_gt_detections / n_cat_cols
 
-    print(f'TOTAL: {accuracy_categories_dirty} vs  {accuracy_categories} vs ED2 {accuracy_categories_ed2_detections} vs DBOOST {accuracy_categories_dboost_detections} vs GT {accuracy_categories_gt_detections}')
+    print(f'TOTAL F1: {accuracy_categories_dirty} vs  {accuracy_categories}')
 
 dirty_data[filtered_header] = df_cleaned[filtered_header]#clean_csv
 lop_data = reverse_to_input_domain(args.dataset, dirty_data, FULL_SCALER, CAT_ENCODER)
@@ -255,6 +285,10 @@ for_plots = pd.DataFrame({'rmse_numeric':rmse_repaired, 'rmse_gt_detector':rmse_
                           'rmse_dboost': rmse_dboost, 'rmse_ed2': rmse_ed2,
                           'accuracy_categorical': accuracy_categories,
                           'accuracy_categorical_dirty': accuracy_categories_dirty,
+                          'precision_categorical': precision_categories,
+                          'precision_categorical_dirty': precision_categories_dirty,
+                          'recall_categorical': recall_categories,
+                          'recall_categorical_dirty': recall_categories_dirty,
                           'accuracy_categorical_ed2_detections': accuracy_categories_ed2_detections,
                           'accuracy_categorical_dboost_detections': accuracy_categories_dboost_detections,
                           'accuracy_categorical_gt_detections': accuracy_categories_gt_detections}, index = [0])

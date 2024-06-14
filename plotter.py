@@ -181,10 +181,10 @@ def plot_ablation_studies(dataset, plot_type = 'point'):
     _plot_ablation(df_epochs, f'{args.dataset}_epochs', 'param', 'Number of Training Epochs', plot_type, palette)
     _plot_ablation(df_latents, f'{args.dataset}_latents', 'param', 'Latent Space Dimensionality', plot_type, palette)
 
-def _plot_rein(dataset, data_type = "numeric"):
+def _plot_rein(dataset, data_type = "numeric", metric = "f1"):
     df = pd.read_csv(f'./DATASETS_REIN/rein_{dataset}_cleaning_results.csv')
     df_lop = pd.read_csv(f'./evaluation/rein_rmse_{args.dataset}.csv')
-    df.drop(df.columns.difference(['detector', 'cleaner','onlyNum_rmse_repaired', 'onlyCat_f']), 1, inplace=True)
+    df.drop(df.columns.difference(['detector', 'cleaner','onlyNum_rmse_repaired', 'onlyCat_f',  'onlyCat_p',  'onlyCat_r']), 1, inplace=True)
     fig, ax = plt.subplots()
 
     #fix the model names
@@ -233,13 +233,23 @@ def _plot_rein(dataset, data_type = "numeric"):
         
     elif data_type == "categorical":
 
-        g = sns.barplot(data = df, x = 'cleaner', y = 'onlyCat_f', hue = 'detector', errorbar = None,  linewidth=1.5, ax = ax, palette = detectors_palette)
+        if metric == "f1":
+            rein_col = 'onlyCat_f'
+            lop_col = 'accuracy_categorical'
+            title = "F1"
+        elif metric == "precision":
+            rein_col = 'onlyCat_p'
+            lop_col = 'precision_categorical'
+            title = "Precision"
+        elif metric == "recall":
+            rein_col = 'onlyCat_r'
+            lop_col = 'recall_categorical'
+            title = "Recall"
 
-        plt.axhline(y = df_lop['accuracy_categorical'][0], color = 'k', linestyle = '--')
-        #plt.axhline(y = df_lop['accuracy_categorical_ed2_detections'][0], color = 'g', linestyle = '--')
-        #plt.axhline(y = df_lop['accuracy_categorical_dirty'][0], color = 'grey', linestyle = '--')
+        g = sns.barplot(data = df, x = 'cleaner', y = rein_col, hue = 'detector', errorbar = None,  linewidth=1.5, ax = ax, palette = detectors_palette)
+        plt.axhline(y = df_lop[lop_col][0], color = 'k', linestyle = '--')
         plt.xlabel('Cleaning method')
-        plt.ylabel('Accuracy (higher is better)')
+        plt.ylabel(f'{title} Score (higher is better)')
         legend_elements  =  [Line2D([0], [0], linestyle='--', color='k', label='LOP', markerfacecolor='k', markersize=15)]
         plt.ylim(0.0 , 1.0)
 
@@ -265,8 +275,12 @@ def _plot_rein(dataset, data_type = "numeric"):
         plt.xlabel('')
     if not args.y_title:
         plt.ylabel('')
-    
-    plt.savefig(f'./evaluation/plots/rein_comparision_{data_type}_{args.dataset}.svg')
+
+    if data_type == "categorical":
+        plt.savefig(f'./evaluation/plots/rein_comparision_{data_type}_{args.dataset}_{metric}.svg')
+    else:
+        plt.savefig(f'./evaluation/plots/rein_comparision_{data_type}_{args.dataset}.svg')
+        
     plt.show()
     return g
     
@@ -275,7 +289,9 @@ def plot_rein_numeric(dataset):
 
 
 def plot_rein_categorical(dataset):
-    _plot_rein(dataset, "categorical")
+    _plot_rein(dataset, "categorical", "f1")
+    _plot_rein(dataset, "categorical", "precision")
+    _plot_rein(dataset, "categorical", "recall")
 
 
 
