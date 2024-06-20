@@ -241,6 +241,9 @@ def load_features_and_data(ds, n_instances, n_test_instances, missing, scaler, C
 
     return headers, target, FULL, data_no_target.to_numpy(), df_dirty, Y, df_clean, full_scaler, CAT_ENCODER
 
+
+
+
 def reverse_categorical_columns(ds, data, label_encoder):
     dataset_config = _get_data_config()
     return pr.reverse_categorical_columns(ds, data, label_encoder, dataset_config)
@@ -248,3 +251,28 @@ def reverse_categorical_columns(ds, data, label_encoder):
 def reverse_to_input_domain(ds, data, scaler, CAT_ENCODER):
     lop_data = pd.DataFrame(scaler.inverse_transform(data), columns = data.columns)
     return reverse_categorical_columns(ds, lop_data, CAT_ENCODER)
+
+
+def prepare_data_subset(df, ds, missing, scaler, CAT_ENCODER, normalize_y = False):
+    dataset_config = _get_data_config()
+    df = _replace_nan(df, missing)
+
+    #drop rows that still contains empty cells
+    df,_ = pr.preprocess(df,dataset_config[ds]["target"],
+                         dataset_config[ds]["date_cols"],
+                         dataset_config[ds]["id_cols"],
+                         dataset_config[ds]["cat_cols"],
+                         les = CAT_ENCODER)
+
+    #non-normalized copy
+    target = dataset_config[ds]['target']
+    y_ = df[target].copy()
+    
+    df = _normalize_by_mean(df, scaler)
+
+    if not normalize_y:
+        df[target] = y_    
+
+
+    return df
+

@@ -39,13 +39,11 @@ print("Is Eager execution?",tf.executing_eagerly())
 LOP = None
 
 @tf.function
-def _translate_1(inputs):
+def _translate_all_columns_by_1(inputs):
     zs  = inputs
-    column = 0
-    for i in range(zs.shape[0]):
+    for column in range(zs.shape[0]):
         new_z = LOP.translate_operator(zs[column], 1)
         zs = tf.tensor_scatter_nd_update(zs, [column], new_z)
-        column = column + 1
     return zs
 
 def generate_cleaned_data(x_, Zs, Ks, decoder):
@@ -137,11 +135,10 @@ x_test = x_test[0:V_EXAMPLES]
 y_test = y_test[0:V_EXAMPLES]
 print("# tuples for test:", x_test.shape[0])
 
-percentages_of_noise = [0.0]
-
+#percentages_of_noise = [0.0]
 # clean_scores.append(nnreg_model.evaluate(x_clean, y_clean)[1])
 # n_scores.append(nnreg_model.evaluate(x_test, y_test)[1]) #dirty score
-# Zs, Ks = predict_on_enhanced(x_test, LOP, encoder, decoder, _translate_1)
+# Zs, Ks = predict_on_enhanced(x_test, LOP, encoder, decoder, _translate_all_columns_by_1)
 # en_scores.append(enhanced_model.evaluate(tf.unstack(Zs, axis = 1), y_test)[1])
 # detections = eval_correctly(x_test, y_test, Zs, Ks, decoder, nnreg_model)
 # en_smart_scores.append(detections)
@@ -158,7 +155,7 @@ numeric_header = headers["numeric_header"]
 categorical_header = headers["categorical_header"]
 
 X_dirty = deepcopy(data_with_y[filtered_header]).to_numpy()
-Zs_csv, Ks_csv = predict_on_enhanced(X_dirty, LOP, encoder, decoder, _translate_1)
+Zs_csv, Ks_csv = predict_on_enhanced(X_dirty, LOP, encoder, decoder, _translate_all_columns_by_1)
 clean_csv = generate_cleaned_data(X_dirty, Zs_csv, Ks_csv, decoder)
 
 
@@ -272,6 +269,10 @@ if n_cat_cols > 0:
 dirty_data[filtered_header] = df_cleaned[filtered_header]#clean_csv
 lop_data = reverse_to_input_domain(args.dataset, dirty_data, FULL_SCALER, CAT_ENCODER)
 lop_data.to_csv(f'./DATASETS_REIN/{args.dataset}/LOP.csv', index = False)
+
+
+
+###EVALUATE REIN################################################################################
 
 rmse_dirty, rmse_repaired = cln.evaluate(f"./DATASETS_REIN/{args.dataset}/clean.csv",
                                          f"./DATASETS_REIN/{args.dataset}/dirty01.csv",

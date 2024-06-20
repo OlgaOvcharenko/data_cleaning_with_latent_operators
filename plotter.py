@@ -221,7 +221,7 @@ def _plot_rein(dataset, data_type = "numeric", metric = "f1"):
         plt.axhline(y = df_lop['rmse_numeric'][0], color = 'k', linestyle = '--')
         #plt.axhline(y = df_lop['rmse_dboost'][0], color = 'g', linestyle = '--')
         plt.axhline(y = df_lop['rmse_dirty'][0], color = 'grey', linestyle = '--') 
-        plt.xlabel('Cleaning method')
+        plt.xlabel('Error Repair Method')
         plt.ylabel('RMSE (lower is better)')
 
         legend_elements  =  [Line2D([0], [0], linestyle='--', color='k', label='LOP', markerfacecolor='k', markersize=15),
@@ -248,7 +248,7 @@ def _plot_rein(dataset, data_type = "numeric", metric = "f1"):
 
         g = sns.barplot(data = df, x = 'cleaner', y = rein_col, hue = 'detector', errorbar = None,  linewidth=1.5, ax = ax, palette = detectors_palette)
         plt.axhline(y = df_lop[lop_col][0], color = 'k', linestyle = '--')
-        plt.xlabel('Cleaning method')
+        plt.xlabel('Error Repair Method')
         plt.ylabel(f'{title} Score (higher is better)')
         legend_elements  =  [Line2D([0], [0], linestyle='--', color='k', label='LOP', markerfacecolor='k', markersize=15)]
         plt.ylim(0.0 , 1.0)
@@ -348,31 +348,47 @@ def plot_time_vs_rmse(dataset):
     time_ks['sec'] = time_ks['sec'] / 60
 
     #plot bot hi nthe same axis (RMSE vs time)
-    time_latent = pd.concat([time_latent, df_latent['lop_numeric'] * 20], axis = 1)
-    time_ks = pd.concat([time_ks, df_ks['lop_numeric'] * 10], axis = 1)
+    time_latent = pd.concat([time_latent, df_latent['lop_numeric']], axis = 1)
+    time_ks = pd.concat([time_ks, df_ks['lop_numeric']], axis = 1)
     
     palette = {'lop_numeric': '#00B3AD', 'sec': '#FFB3AD'}
-    
-    #melt all columns into value
-    df_ks = df_ks.melt(id_vars='param', var_name='Model')
-    df_latent = df_latent.melt(id_vars='param', var_name='Model')
-    time_ks = time_ks.melt(id_vars='param', var_name='Model')
-    time_latent = time_latent.melt(id_vars='param', var_name='Model')
 
+
+    #melt all columns into value
+    #df_ks = df_ks.melt(id_vars='param', var_name='Model')
+    #df_latent = df_latent.melt(id_vars='param', var_name='Model')
+    #time_ks = time_ks.melt(id_vars='param', var_name='Model')
+    #time_latent = time_latent.melt(id_vars='param', var_name='Model')
+
+
+    fig, ax1 = plt.subplots()
     
-    g = sns.catplot(data = time_latent, x = 'param'  , y = 'value', hue = 'Model', errorbar = None, marker=['D','o', '*'], kind = args.type, palette=palette, linewidth=1.5)
+    #g = sns.lineplot(data = time_latent, x = 'param'  , y = 'value', hue = 'Model', errorbar = None, marker=['D','o', '*'], kind = args.type, palette=palette, linewidth=1.5)
+    g = sns.lineplot(x = time_latent["param"],  y = time_latent["sec"],  errorbar = None, markers=True, palette=palette["sec"], linewidth=1.5, ax = ax1)
+
+    ax1.tick_params(axis='y', labelcolor=palette["sec"])
+
+    ax2 = plt.twinx()
     
-    g.legend.remove()
-    plt.xlabel('Dimensionality of the latent space (per model)')
+    g2 = sns.lineplot(x = time_latent["param"], y = time_latent["lop_numeric"],  errorbar = None, color=palette["lop_numeric"], linewidth=1.5, ax = ax2)
+
+    ax2.tick_params(axis='y', labelcolor=palette["lop_numeric"])
+    ax2.set_yticks([0.5,1.0,1.5,2.0,2.5,3.0])
+    # set the ticks first 
+    #.set_yticks(range(5)) 
+    
+    #g.legend_.remove()
+    plt.xlabel('Dimensionality of the latent space (per column)')
     plt.ylabel('Time to train in minutes')
     plt.autoscale()
     plt.tight_layout()        
     plt.savefig(f'./evaluation/ablation_studies/plots/time_latent_{args.dataset}.svg')
     plt.show()
 
-    g = sns.catplot(data = time_ks, x = 'param'  , y = 'value', hue = 'Model', errorbar = None, marker=['D','o', '*'], kind = args.type, palette=palette, linewidth=1.5)
+    #g = sns.catplot(data = time_ks, x = 'param'  , y = 'value', hue = 'Model', errorbar = None, marker=['D','o', '*'], kind = args.type, palette=palette, linewidth=1.5)
+    g = sns.lineplot(data = time_ks, x = 'param'  , y = 'value', hue = 'Model', errorbar = None, color=palette["lop_numeric"], linewidth=1.5)
 
-    g.legend.remove()
+    g.legend_.remove()
     plt.xlabel('Number of K errors for training')
     plt.ylabel('Time to train in minutes')
     plt.autoscale()

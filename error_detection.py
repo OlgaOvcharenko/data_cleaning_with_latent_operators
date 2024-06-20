@@ -12,7 +12,7 @@ from latent_operator_train_loop import LatentTrainLoop
 from copy import deepcopy
 from sklearn.metrics import mean_squared_error, accuracy_score
 
-def predict_on_enhanced(x, LOP, encoder, decoder, _translate_1, GT_K = None):
+def predict_on_enhanced(x, LOP, encoder, decoder, _translate_all_columns_by_1, GT_K = None):
 
     K = LOP.n_rotations
     Zs = encoder(x)
@@ -24,7 +24,7 @@ def predict_on_enhanced(x, LOP, encoder, decoder, _translate_1, GT_K = None):
         valuesA = tf.squeeze(decoder(tf.unstack(A, axis = 0)))
         distances.append(valuesA)
         A = tf.transpose(A, [1,0,2])
-        A = tf.vectorized_map(_translate_1, A) 
+        A = tf.vectorized_map(_translate_all_columns_by_1, A) 
     rotations = (K - 1) -  tf.transpose(tf.argmax(distances, axis = 0), [1,0]) 
     Ks_predicted = rotations
     

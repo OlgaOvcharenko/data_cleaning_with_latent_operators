@@ -339,11 +339,13 @@ print("NN train ", time.time() - start, "sec")
 #save training performance
 df_time_k = pd.DataFrame(train_times_k, index = list_of_ks, columns = ['sec'])
 df_time_k.index.name = "param"
-df_time_k.to_csv(f'./evaluation/ablation_studies/time_to_train_k_{args.dataset}.csv')
+if(df_time_k.shape[0] > 5):
+    df_time_k.to_csv(f'./evaluation/ablation_studies/time_to_train_k_{args.dataset}.csv')
 
 df_time_latent = pd.DataFrame(train_times_latent, index = list_of_latents, columns = ['sec'])
 df_time_latent.index.name = "param"
-df_time_latent.to_csv(f'./evaluation/ablation_studies/time_to_train_latent_{args.dataset}.csv')
+if(df_time_latent.shape[0] > 5):
+    df_time_latent.to_csv(f'./evaluation/ablation_studies/time_to_train_latent_{args.dataset}.csv')
 
 
 ####################################################################################################################################
