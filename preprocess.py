@@ -45,7 +45,7 @@ def _decode_cat(X_c, encoder):
     #data = np.squeeze(nonulls)
     return data
 
-def preprocess(df, target, datecols, id_cols, cat_cols, les=None, fill_na=True, drop_columns = True):
+def preprocess(df, datecols, id_cols, cat_cols, les=None, fill_na=True, drop_columns = True):
     data = df.copy(deep=True)
     # remove rows where target is missing
     #data.drop(data[data[target].isnull()].index, inplace=True)
@@ -72,6 +72,7 @@ def preprocess(df, target, datecols, id_cols, cat_cols, les=None, fill_na=True, 
         data[c] = pd.to_numeric(data[c], errors = 'coerce')
 
     return data, les
+
 
 def reverse_categorical_columns(ds, data, label_encoder, dataset_config):
     categorical_columns = dataset_config[ds]["cat_cols"]

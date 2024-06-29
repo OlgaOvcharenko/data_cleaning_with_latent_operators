@@ -17,18 +17,18 @@ def get_tf_database(data, target, batchsize):
 
 def _get_data_config():
     return {
-        "bikes": {"id_cols": ["instant"], "cat_cols": [], "date_cols": ["dteday"], "target": "cnt"}, #REIN version date is already ok
-        "smart_factory": {"id_cols": [], "cat_cols": [], "date_cols":[], "target": "labels"},
+        "bikes": {"id_cols": ["instant"], "cat_cols": [], "date_cols": ["dteday"], "target": "cnt", "float_cols": ["temp", "atemp", "hum", "windspeed"], "allow_negatives": []}, #REIN version date is already ok
+        "smart_factory": {"id_cols": [], "cat_cols": [], "date_cols":[], "target": "labels", "float_cols": [],"allow_negatives": ["i_w_bhr_weg", "i_w_blo_weg", "i_w_bru_weg", "i_w_hr_weg", "i_w_hl_weg", "i_w_bhl_weg"]},
         "water": {"id_cols": ["index"], "cat_cols": [], "date_cols":[], "target": "x38"}, #RANDOM TARGET BECAUSE IT IS A clustering TASK
-        "adult": {"id_cols": [], "cat_cols": ["workclass", "education", "marital_status", "occupation", "relationship", "gender", "native_country","race"], "date_cols":[], "target": "income"},
+        "adult": {"id_cols": [], "cat_cols": ["workclass", "education", "marital_status", "occupation", "relationship", "gender", "native_country","race"], "date_cols":[], "target": "income" , "float_cols": [], "allow_negatives": []},
         "beers": {"id_cols": ["index", "id", "brewery_id", "beer_name"], "cat_cols": ["city",  "state", "brewery_name", "style"], "date_cols": [], "target": "style"},
         "breast_cancer": {"id_cols":  ["Sample code number"],"cat_cols": [], "date_cols": [], "target": "class"},
         "soilmoisture": {"id_cols": [], "cat_cols": [], "date_cols": [("datetime", None)], "target": "soil_moisture"},
         "airbnb": {"id_cols": [], "cat_cols": ["LocationName", "Rating"], "date_cols": [], "target": "Price"},
-        "soccer_OR": {"id_cols": ['id_x'], "cat_cols": ["player_name", "attacking_work_rate", "preferred_foot"], "date_cols": ["date", "birthday"], "target": "overall_rating"},
-        "soccer_PLAYER": {"id_cols": ['id_x'], "cat_cols": ["player_name", "attacking_work_rate", "preferred_foot"], "date_cols": ["date", "birthday"], "target": "player_name"},
-        "nasa": {"id_cols": [], "cat_cols": [], "date_cols": [], "target": "sound_pressure_level"},
-        "har": {"id_cols": ["Index"], "cat_cols": ["gt"], "date_cols": [], "target": "gt"}
+        #"soccer_OR": {"id_cols": ['id_x'], "cat_cols": ["player_name", "attacking_work_rate", "preferred_foot"], "date_cols": ["date", "birthday"], "target": "overall_rating", "float_cols": ["height"], "allow_negatives": []},
+        "soccer_PLAYER": {"id_cols": ['id_x'], "cat_cols": ["player_name", "attacking_work_rate", "preferred_foot"], "date_cols": ["date", "birthday"], "target": "overall_rating", "float_cols": ["height"], "allow_negatives": []},
+        "nasa": {"id_cols": [], "cat_cols": [], "date_cols": [], "target": "sound_pressure_level", "float_cols": ["frequency", "angle", "chord_length", "velocity", "thickness", "sound_pressure_level"], "allow_negatives": []},
+        "har": {"id_cols": ["Index"], "cat_cols": ["gt"], "date_cols": [], "target": "gt", "float_cols": ["x", "y", "z"], "allow_negatives": ["x", "y", "z"]}
     }
 
 
@@ -57,9 +57,9 @@ def _get_train_val_and_test(df, target, n_train_instances, n_test_instances):
     train, val, test = np.split(df.sample(frac=1), #shuffle
                                 [int(.70*len(df)), int(.80*len(df))])
 
-    X_train = train.to_numpy(dtype=np.float32)[:n_train_instances, df.columns != target ]
-    X_val = val.to_numpy(dtype=np.float32)[:, df.columns != target]
-    X_test = test.to_numpy(dtype=np.float32)[:n_test_instances, df.columns != target]
+    X_train = train.to_numpy(dtype=np.float32)[:n_train_instances]#, df.columns != target ]
+    X_val = val.to_numpy(dtype=np.float32)#[:, df.columns != target]
+    X_test = test.to_numpy(dtype=np.float32)[:n_test_instances]#, df.columns != target]
 
     #must add a newaxis (empty)
     y_train = train.to_numpy(dtype=np.float32)[:n_train_instances, df.columns == target, np.newaxis]
@@ -82,10 +82,10 @@ def load_regression(ds, n_train_instances, n_test_instances, normalize_y = False
     clean_dir = f"DATASETS_REIN/{ds}/"
     df = pd.read_csv(os.path.join(clean_dir, 'clean.csv'))
 
-    df, CAT_ENCODER = pr.preprocess(df,dataset_config[ds]["target"],
-                               dataset_config[ds]["date_cols"],
-                               dataset_config[ds]["id_cols"],
-                               dataset_config[ds]["cat_cols"])
+    df, CAT_ENCODER = pr.preprocess(df,
+                                    dataset_config[ds]["date_cols"],
+                                    dataset_config[ds]["id_cols"],
+                                    dataset_config[ds]["cat_cols"])
 
     print("Unique Values per column:\n ", df.nunique())
 
@@ -122,7 +122,7 @@ def load_regression_dirty(ds, n_train_instances, n_test_instances, missing, scal
     df = _replace_nan(df, missing)
 
     #drop rows that still contains empty cells
-    df,_ = pr.preprocess(df,dataset_config[ds]["target"],
+    df,_ = pr.preprocess(df,
                          dataset_config[ds]["date_cols"],
                          dataset_config[ds]["id_cols"],
                          dataset_config[ds]["cat_cols"],
@@ -169,14 +169,12 @@ def load_features_and_data(ds, n_instances, n_test_instances, missing, scaler, C
     FULL = deepcopy(df)    
   
     df, _ = pr.preprocess(df,
-                          dataset_config[ds]["target"],
                           dataset_config[ds]["date_cols"],
                           dataset_config[ds]["id_cols"],
                           dataset_config[ds]["cat_cols"],
                           les = CAT_ENCODER)
 
     df_clean, _ = pr.preprocess(df_clean,
-                                dataset_config[ds]["target"],
                                 dataset_config[ds]["date_cols"],
                                 dataset_config[ds]["id_cols"],
                                 dataset_config[ds]["cat_cols"],
@@ -190,7 +188,6 @@ def load_features_and_data(ds, n_instances, n_test_instances, missing, scaler, C
 
 
     FULL, _ = pr.preprocess(FULL,
-                            dataset_config[ds]["target"],
                             dataset_config[ds]["date_cols"],
                             dataset_config[ds]["id_cols"],
                             dataset_config[ds]["cat_cols"],
@@ -225,8 +222,8 @@ def load_features_and_data(ds, n_instances, n_test_instances, missing, scaler, C
         df[target] = y_
 
     data_no_target = df.drop([target], axis = 1)
-    filtered_header = data_no_target.columns.tolist()
-    Y = df[target].to_numpy()#dtype=np.float32)
+    filtered_header = df.columns.tolist() #data_no_target.columns.tolist()
+    Y = df[target].to_numpy() #dtype=np.float32)
     
     print("numeric:", numeric_header)
     print("categorical:", categorical_header)
@@ -250,6 +247,23 @@ def reverse_categorical_columns(ds, data, label_encoder):
 
 def reverse_to_input_domain(ds, data, scaler, CAT_ENCODER):
     lop_data = pd.DataFrame(scaler.inverse_transform(data), columns = data.columns)
+
+
+    #META INFORMATION
+    dataset_config = _get_data_config()
+
+    #negative columns go to zero if the column does not allow for negative values
+    allow_negatives = dataset_config[ds]["allow_negatives"]
+    min_zero_columns = lop_data.columns.difference(allow_negatives)   
+    lop_data[lop_data[min_zero_columns] < 0] = 0
+    
+    #round integer columns to the closest integer
+    non_integers = dataset_config[ds]["date_cols"] + dataset_config[ds]["id_cols"] +  dataset_config[ds]["cat_cols"] +  dataset_config[ds]["float_cols"]
+    integer_columns = lop_data.columns.difference(non_integers)   
+    lop_data[integer_columns] = lop_data[integer_columns].round(0).astype('int64')  
+    ###########################################################
+    
+    
     return reverse_categorical_columns(ds, lop_data, CAT_ENCODER)
 
 

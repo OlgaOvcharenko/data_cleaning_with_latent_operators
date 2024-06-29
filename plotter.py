@@ -185,18 +185,18 @@ def _plot_rein(dataset, data_type = "numeric", metric = "f1"):
     df = pd.read_csv(f'./DATASETS_REIN/rein_{dataset}_cleaning_results.csv')
     df_lop = pd.read_csv(f'./evaluation/rein_rmse_{args.dataset}.csv')
 
-
+    df.drop(df.columns.difference(['detector', 'cleaner','onlyNum_rmse_repaired', 'onlyCat_f',  'onlyCat_p',  'onlyCat_r']), 1, inplace=True)
+    
     #received the RAHA results in a different format from REIN benchmark
-    if dataset == "adult" or dataset == "soccer_PLAYER":
+    if dataset == "adult" or dataset == "soccer_PLAYER" or dataset == "har":
         df_raha = pd.read_csv(f'./DATASETS_REIN/rein_{args.dataset}_raha.csv')
         df_raha.rename(columns={"tool_name": "cleaner"}, inplace= True)
         df_raha["detector"] = "raha"
         df_raha.drop(df_raha.columns.difference(['detector', 'cleaner','onlyNum_rmse_repaired', 'onlyCat_f',  'onlyCat_p',  'onlyCat_r']), 1, inplace=True)
         df_raha.sort_index(axis=1, inplace=True)
         df.sort_index(axis=1, inplace=True)
-
-    df.drop(df.columns.difference(['detector', 'cleaner','onlyNum_rmse_repaired', 'onlyCat_f',  'onlyCat_p',  'onlyCat_r']), 1, inplace=True)
-    df = pd.concat([df, df_raha], ignore_index=True)
+        df = pd.concat([df, df_raha], ignore_index=True)
+        
     fig, ax = plt.subplots()
 
     #fix the model names
