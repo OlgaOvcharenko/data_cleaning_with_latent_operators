@@ -162,8 +162,11 @@ def load_features_and_data(ds, n_instances, n_test_instances, missing, scaler, C
     numeric_header = df_clean.select_dtypes(include="number").columns
     categorical_header = df_clean.select_dtypes(exclude="number").columns
 
-    #remove date columns fro mthe categorical set
-    categorical_header = categorical_header.drop(dataset_config[ds]["date_cols"])
+    #check if it is not a timestamp
+    for dtcol in dataset_config[ds]["date_cols"]:
+        if  dtcol not in numeric_header :
+            #remove date columns from the categorical set
+            categorical_header = categorical_header.drop(dtcol)
 
     #save the full version for CSV write
     FULL = deepcopy(df)    
@@ -185,7 +188,6 @@ def load_features_and_data(ds, n_instances, n_test_instances, missing, scaler, C
     sc = StandardScaler()
     _, full_scaler = _fit_mean_scaler(df_clean, sc)
     # #################################################################
-
 
     FULL, _ = pr.preprocess(FULL,
                             dataset_config[ds]["date_cols"],
@@ -222,7 +224,7 @@ def load_features_and_data(ds, n_instances, n_test_instances, missing, scaler, C
         df[target] = y_
 
     data_no_target = df.drop([target], axis = 1)
-    filtered_header = df.columns.tolist() #data_no_target.columns.tolist()
+    filtered_header = filtered_header_with_y #df.columns.tolist() #data_no_target.columns.tolist()
     Y = df[target].to_numpy() #dtype=np.float32)
     
     print("numeric:", numeric_header)
@@ -237,6 +239,13 @@ def load_features_and_data(ds, n_instances, n_test_instances, missing, scaler, C
    
 
     return headers, target, FULL, data_no_target.to_numpy(), df_dirty, Y, df_clean, full_scaler, CAT_ENCODER
+
+
+
+
+
+
+
 
 
 

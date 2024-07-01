@@ -106,7 +106,7 @@ if args.dataset == 'beers':
 elif args.dataset == 'smart_factory':
     list_of_training_size = [20, 50, 100, 200, 300, 600, 1000, 1800,  3000, 4000, 5000, 7000, 10000, 14000]
 else:
-    list_of_training_size = [5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000]#, 45000]
+    list_of_training_size = [1000, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000]#, 45000]
 
 
 list_of_models_by_tuples = {}
@@ -443,14 +443,13 @@ if args.metric == "downstream":
     _evaluate_ablation_model_on_domwnstream_task(list_of_models_by_ks, list_of_ks, f'ks_{args.dataset}')
 
 else:
-    #_evaluate_ablation_model_on_rmse(list_of_models_by_tuples, list_of_training_size, f'tuples_{args.dataset}')
-    #print("tuples done.")
     #_evaluate_ablation_model_on_rmse(list_of_models_K_equal_latent, list_of_latents, f'equal_{args.dataset}')
     #_evaluate_ablation_model_on_rmse(list_of_models_proportional, list_of_ks, f'proportional_{args.dataset}')
 
-
-    #_evaluate_ablation_model_on_rmse(list_of_models_by_epoch, list_of_epochs, f'epochs_{args.dataset}')
-    #print("epochs done.")
+    #_evaluate_ablation_model_on_rmse(list_of_models_by_tuples, list_of_training_size, f'tuples_{args.dataset}')
+    #print("tuples done.")
+    _evaluate_ablation_model_on_rmse(list_of_models_by_epoch, list_of_epochs, f'epochs_{args.dataset}')
+    print("epochs done.")
     _evaluate_ablation_model_on_rmse(list_of_models_by_latent, list_of_latents, f'latents_{args.dataset}')
     print("latent done.")
     _evaluate_ablation_model_on_rmse(list_of_models_by_ks, list_of_ks, f'ks_{args.dataset}')

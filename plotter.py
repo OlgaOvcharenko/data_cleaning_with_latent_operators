@@ -203,6 +203,7 @@ def _plot_rein(dataset, data_type = "numeric", metric = "f1"):
     df['cleaner'] = df['cleaner'].replace(regex=['standardImputer-'], value='SI ')
     df['cleaner'] = df['cleaner'].replace(regex=['mlImputer-'], value='ML ')
     df['cleaner'] = df['cleaner'].replace(regex=['seperate-'], value='')
+    df['cleaner'] = df['cleaner'].replace(regex=['-dummy'], value='')
     df['cleaner'] = df['cleaner'].replace(regex=['separate-'], value='ML ')
     df['cleaner'] = df['cleaner'].replace(regex=['impute-'], value='')
     df['cleaner'] = df['cleaner'].replace(regex=['missForest'], value='MF')
@@ -363,51 +364,54 @@ def plot_time_vs_rmse(dataset):
     #plot bot hi nthe same axis (RMSE vs time)
     time_latent = pd.concat([time_latent, df_latent['lop_numeric']], axis = 1)
     time_ks = pd.concat([time_ks, df_ks['lop_numeric']], axis = 1)
-    
+
+    time_ks = time_ks[1:] # drop K = 1 because there is no cleaning
+
     palette = {'lop_numeric': '#00B3AD', 'sec': '#FFB3AD'}
-
-
+    
     #melt all columns into value
     #df_ks = df_ks.melt(id_vars='param', var_name='Model')
     #df_latent = df_latent.melt(id_vars='param', var_name='Model')
     #time_ks = time_ks.melt(id_vars='param', var_name='Model')
     #time_latent = time_latent.melt(id_vars='param', var_name='Model')
 
-
+    #latent plot
     fig, ax1 = plt.subplots()
-    
-    #g = sns.lineplot(data = time_latent, x = 'param'  , y = 'value', hue = 'Model', errorbar = None, marker=['D','o', '*'], kind = args.type, palette=palette, linewidth=1.5)
-    g = sns.lineplot(x = time_latent["param"],  y = time_latent["sec"],  errorbar = None, markers=True, palette=palette["sec"], linewidth=1.5, ax = ax1)
 
-    ax1.tick_params(axis='y', labelcolor=palette["sec"])
+    g = sns.lineplot(x = time_latent["param"],  y = time_latent["sec"],  errorbar = None, marker='o', palette=palette["sec"], linewidth=2.5, ax = ax1)
 
     ax2 = plt.twinx()
-    
-    g2 = sns.lineplot(x = time_latent["param"], y = time_latent["lop_numeric"],  errorbar = None, color=palette["lop_numeric"], linewidth=1.5, ax = ax2)
 
-    ax2.tick_params(axis='y', labelcolor=palette["lop_numeric"])
-    ax2.set_yticks([0.5,1.0,1.5,2.0,2.5,3.0])
-    # set the ticks first 
-    #.set_yticks(range(5)) 
-    
-    #g.legend_.remove()
-    plt.xlabel('Dimensionality of the latent space (per column)')
-    plt.ylabel('Time to train in minutes')
-    plt.autoscale()
+    g2 = sns.lineplot(x = time_latent["param"], y = time_latent["lop_numeric"],  errorbar = None, marker='o', color=palette["lop_numeric"], linewidth=2.5, ax = ax2)
+
+    ax2.set(ylim=(0, 1))
+        
+    ax1.set(xlabel = 'Dimensionality of the latent space (per column)')
+    ax1.set(ylabel='Time to train in minutes')
+    ax2.set(ylabel='F1 score on data cleaning')
     plt.tight_layout()        
     plt.savefig(f'./evaluation/ablation_studies/plots/time_latent_{args.dataset}.svg')
     plt.show()
 
-    #g = sns.catplot(data = time_ks, x = 'param'  , y = 'value', hue = 'Model', errorbar = None, marker=['D','o', '*'], kind = args.type, palette=palette, linewidth=1.5)
-    g = sns.lineplot(data = time_ks, x = 'param'  , y = 'value', hue = 'Model', errorbar = None, color=palette["lop_numeric"], linewidth=1.5)
+    #K version of the plot
+    fig, ax1 = plt.subplots()
+    
+    g = sns.lineplot(x = time_ks["param"], y = time_ks["sec"],  errorbar = None, marker='o', palette=palette["sec"], linewidth=2.5, ax = ax1)
 
-    g.legend_.remove()
-    plt.xlabel('Number of K errors for training')
-    plt.ylabel('Time to train in minutes')
-    plt.autoscale()
+    ax2 = plt.twinx()
+
+    g2 = sns.lineplot(x = time_ks["param"], y = time_ks["lop_numeric"],  errorbar = None, marker='o', color=palette["lop_numeric"], linewidth=2.5, ax = ax2)
+
+    ax1.set(ylim=(0, 20))
+    ax2.set(ylim=(0, 2))
+        
+    ax1.set(xlabel = 'Number of transformations (K)')
+    ax1.set(ylabel='Time to train in minutes')
+    ax2.set(ylabel='F1 score on data cleaning')
     plt.tight_layout()        
     plt.savefig(f'./evaluation/ablation_studies/plots/time_ks_{args.dataset}.svg')
     plt.show()
+
 
 
 if args.experiment == "vs_dirty_percentages" : 
