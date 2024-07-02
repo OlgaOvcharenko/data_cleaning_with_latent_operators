@@ -224,7 +224,7 @@ def load_features_and_data(ds, n_instances, n_test_instances, missing, scaler, C
         df[target] = y_
 
     data_no_target = df.drop([target], axis = 1)
-    filtered_header = filtered_header_with_y #df.columns.tolist() #data_no_target.columns.tolist()
+    filtered_header = header    #df.columns.tolist() #data_no_target.columns.tolist()
     Y = df[target].to_numpy() #dtype=np.float32)
     
     print("numeric:", numeric_header)

@@ -11,6 +11,8 @@ import cleaners as cln
 import numpy as np
 import argparse
 import pandas as pd
+import seaborn as sns
+
 
 from tensorflow.keras import Input, Model, Sequential
 from tensorflow.keras.layers import Dense, Concatenate
@@ -23,14 +25,14 @@ from sklearn.metrics import mean_squared_error, accuracy_score, f1_score, precis
 from copy import deepcopy
 
 parser = argparse.ArgumentParser(description="Disentangled Latent Space Operator for Data Engineering")
-parser.add_argument("--epochs", type=int, default=20)
+parser.add_argument("--epochs", type=int, default=80)
 parser.add_argument("--learning_rate", type=float, default=0.001)
-parser.add_argument("--latent", type=int, default=240)
-parser.add_argument("--batch_size", type=int, default=8)
-parser.add_argument("--K", type=int, default=4)
-parser.add_argument("--dataset", default='adult')
-parser.add_argument("--experiment", default='vs_dirty')
+parser.add_argument("--latent", type=int, default=120)
+parser.add_argument("--batch_size", type=int, default=128)
+parser.add_argument("--K", type=int, default=12)
+parser.add_argument("--dataset", default='nasa')
 parser.add_argument("--eval_tuples", type=int, default=-1)
+
 
 args = parser.parse_args()
 
@@ -59,7 +61,8 @@ def _translate_one_column_by_1(inputs, col):
         if column == col:
             new_z = LOP.translate_operator(zs[column], 1)
         else:
-            new_z = zs[column]
+            new_z = zs[column]            
+        #replace the column values in the tensor
         zs =  tf.tensor_scatter_nd_update(zs, [column], new_z)
     return zs
     
@@ -123,114 +126,168 @@ numeric_header = headers["numeric_header"]
 categorical_header = headers["categorical_header"]
 
 
+## REPAIR DATA ###############################################
+def generate_qualitative_data(Zs, decoder, transpose = False):
+    if transpose:
+        Zs = tf.transpose(Zs, [1,0,2])
+        return tf.transpose(tf.squeeze(decoder(tf.unstack(Zs, axis = 1))),[1,0])
+    else:
+        return tf.squeeze(decoder(tf.unstack(Zs, axis = 1)))
+
+Zs = encoder(tf.convert_to_tensor(clean_data, dtype=tf.float32))
 
 
-## PREPARE DIRTY DATA ###############################################
-
-
-clean_tuple = deepcopy(clean_data[filtered_header]).to_numpy()[10]
-Zs = encoder(tf.expand_dims(clean_tuple, axis=0))
-
-
-def generate_qualitative_data(Zs, decoder):
-    return tf.squeeze(tf.transpose(decoder(tf.unstack(Zs, axis = 1)), [1,0,2]))
-
-
-col, row = (0,0)
+#moves a column by K steps#########################
+col = 3
 input_domain_data = []
-n_columns = clean_data.shape[1]-1
-colors = np.full((n_columns, n_columns), "mintcream")
+n_columns = clean_data.shape[1]
+z_list = []
 
-for c in range(n_columns):
+for c in range(clean_data.shape[1]):
     aux = []
-    for i in range(n_columns):
-        a = Zs[i][row]
-        #if i == col:
-        #    aux.append(LOP.translate_operator(a, shift=k))
-        if i < c:
+    for r in range(clean_data.shape[0]):
+        a = Zs[c][r]
+        if c == col:
             aux.append(LOP.translate_operator(a, shift=11))
-            colors[c][i] = "lightgrey"
-            
         else:
             aux.append(a)
+    z_list.append(tf.expand_dims(tf.convert_to_tensor(aux, dtype=tf.float32), axis = 0))
 
-    #decode to the input domain
-    A = tf.expand_dims(tf.convert_to_tensor(aux, dtype=tf.float32), axis = 0)
-    input_domain_data.append(generate_qualitative_data(A, decoder))
+Zs_shifted = tf.squeeze(tf.convert_to_tensor(z_list, dtype=tf.float32))
+####################################################
 
+repaired_data = generate_qualitative_data(Zs, decoder, True)
+repaired_data = pd.DataFrame(repaired_data.numpy(), columns = clean_data.columns)
 
-modified_data = deepcopy(clean_data[0:n_columns])
-modified_data[filtered_header] = input_domain_data
-
-#print(modified_data["race"])
-
-m = reverse_to_input_domain(args.dataset, modified_data, FULL_SCALER, CAT_ENCODER)
+shifted_data = generate_qualitative_data(Zs_shifted, decoder, True)
+shifted_data = pd.DataFrame(shifted_data.numpy(), columns = clean_data.columns)
 
 
-## ENCODE AND DECODE THE MODIFIED TUPLES #############################
-new_data = prepare_data_subset(m, args.dataset, MISSING_REPLACE, SCALER, CAT_ENCODER, normalize_y = True)[filtered_header].to_numpy()
+#clean_data = clean_data[numeric_header]
+#repaired_data = repaired_data[numeric_header]
+#shifted_data = shifted_data[numeric_header]
 
-x_p = []
-
-for tup in new_data:
-    aux = encoder(tf.expand_dims(tup, axis=0))
-    x_p.append(generate_qualitative_data(tf.transpose(aux, [1,0,2]), decoder))
-
-final_data = deepcopy(dirty_data[0:n_columns])
-final_data[filtered_header] = x_p
-
-m = reverse_to_input_domain(args.dataset, final_data, FULL_SCALER, CAT_ENCODER)
-
-#####################################################################
+clean_data = clean_data.iloc[:,1:8]
+repaired_data = repaired_data.iloc[:,1:8]
+shifted_data = shifted_data.iloc[:,1:8]
 
 
-#tuples_to_show = deepcopy(dirty_data_with_y[filtered_header]).to_numpy()[0:10]
-#Zs_csv, Ks_csv = predict_on_enhanced(tuples_to_show, LOP, encoder, decoder, _translate_1)
-#cleaned = generate_cleaned_data(tuples_to_show, Zs_csv, Ks_csv, decoder)
+sns.color_palette("tab10")
+sns.boxplot(data = pd.concat([clean_data, repaired_data, shifted_data], keys=('clean', 'repaired', 'shifted')).stack().rename_axis(index=['dataset', '', 'Column labels']).reset_index(level=[0,2], name='Column values'), x='Column labels', hue='dataset', y='Column values', showfliers = False)
 
-#df_cleaned = deepcopy(dirty_data[0:10])
-#df_cleaned[filtered_header] = cleaned
-
-
-#EVAL CATEGORICAL ACCURACY BY COLUMN###################################################
-#c = reverse_to_input_domain(args.dataset, clean_data[0:10], FULL_SCALER, CAT_ENCODER)
-#d = reverse_to_input_domain(args.dataset, dirty_data[0:10], FULL_SCALER, CAT_ENCODER)
-#l = reverse_to_input_domain(args.dataset, df_cleaned, FULL_SCALER, CAT_ENCODER)
-
-
-
-
-
-### PLOT #######################################
-fig, axs = plt.subplots(1,1)
-
-def _plot_table(data, axs):
-    axs.axis('tight')
-    axs.axis('off')
-
-    data = data.round(0)
-    
-    cell_text = []
-    for row in range(len(data)):
-        cell_text.append(data.iloc[row])
-
-    t = axs.table(cellText=cell_text, colLabels = data.columns, loc='center', cellColours = colors)
-    t.auto_set_font_size(False)
-    t.set_fontsize(9)
-    #t.scale(2, 2)
-
-    return t
-
-#interleaves clean, dirty, cleaned
-#interleaved_df = pd.concat([c, l, d]).sort_index().reset_index(drop=True)
-
-#get first 4 tuples all 3 forms
-#the_table = _plot_table(interleaved_df[0:12], axs)
-
-#remove the target
-m.drop(target_name, axis = 1, inplace= True)
-
-the_table = _plot_table(m[0:n_columns], axs)
-
-
+plt.tight_layout()
+plt.autoscale()
 plt.show()
+
+
+
+
+
+
+
+
+
+
+#clean_tuple = deepcopy(clean_data[filtered_header]).to_numpy()[10]
+#Zs = encoder(tf.expand_dims(clean_tuple, axis=0))
+
+
+
+# col, row = (0,0)
+# input_domain_data = []
+# n_columns = clean_data.shape[1]-1
+# colors = np.full((n_columns, n_columns), "mintcream")
+
+# for c in range(n_columns):
+#     aux = []
+#     for i in range(n_columns):
+#         a = Zs[i][row]
+#         #if i == col:
+#         #    aux.append(LOP.translate_operator(a, shift=k))
+#         if i < c:
+#             aux.append(LOP.translate_operator(a, shift=11))
+#             colors[c][i] = "lightgrey"
+            
+#         else:
+#             aux.append(a)
+
+#     #decode to the input domain
+#     A = tf.expand_dims(tf.convert_to_tensor(aux, dtype=tf.float32), axis = 0)
+#     input_domain_data.append(generate_qualitative_data(A, decoder))
+
+
+# modified_data = deepcopy(clean_data[0:n_columns])
+# modified_data[filtered_header] = input_domain_data
+
+# #print(modified_data["race"])
+
+# m = reverse_to_input_domain(args.dataset, modified_data, FULL_SCALER, CAT_ENCODER)
+
+
+# ## ENCODE AND DECODE THE MODIFIED TUPLES #############################
+# new_data = prepare_data_subset(m, args.dataset, MISSING_REPLACE, SCALER, CAT_ENCODER, normalize_y = True)[filtered_header].to_numpy()
+
+# x_p = []
+
+# for tup in new_data:
+#     aux = encoder(tf.expand_dims(tup, axis=0))
+#     x_p.append(generate_qualitative_data(tf.transpose(aux, [1,0,2]), decoder))
+
+# final_data = deepcopy(dirty_data[0:n_columns])
+# final_data[filtered_header] = x_p
+
+# m = reverse_to_input_domain(args.dataset, final_data, FULL_SCALER, CAT_ENCODER)
+
+# #####################################################################
+
+
+# #tuples_to_show = deepcopy(dirty_data_with_y[filtered_header]).to_numpy()[0:10]
+# #Zs_csv, Ks_csv = predict_on_enhanced(tuples_to_show, LOP, encoder, decoder, _translate_1)
+# #cleaned = generate_cleaned_data(tuples_to_show, Zs_csv, Ks_csv, decoder)
+
+# #df_cleaned = deepcopy(dirty_data[0:10])
+# #df_cleaned[filtered_header] = cleaned
+
+
+# #EVAL CATEGORICAL ACCURACY BY COLUMN###################################################
+# #c = reverse_to_input_domain(args.dataset, clean_data[0:10], FULL_SCALER, CAT_ENCODER)
+# #d = reverse_to_input_domain(args.dataset, dirty_data[0:10], FULL_SCALER, CAT_ENCODER)
+# #l = reverse_to_input_domain(args.dataset, df_cleaned, FULL_SCALER, CAT_ENCODER)
+
+
+
+
+
+# ### PLOT #######################################
+# fig, axs = plt.subplots(1,1)
+
+# def _plot_table(data, axs):
+#     axs.axis('tight')
+#     axs.axis('off')
+
+#     data = data.round(0)
+    
+#     cell_text = []
+#     for row in range(len(data)):
+#         cell_text.append(data.iloc[row])
+
+#     t = axs.table(cellText=cell_text, colLabels = data.columns, loc='center', cellColours = colors)
+#     t.auto_set_font_size(False)
+#     t.set_fontsize(9)
+#     #t.scale(2, 2)
+
+#     return t
+
+# #interleaves clean, dirty, cleaned
+# #interleaved_df = pd.concat([c, l, d]).sort_index().reset_index(drop=True)
+
+# #get first 4 tuples all 3 forms
+# #the_table = _plot_table(interleaved_df[0:12], axs)
+
+# #remove the target
+# m.drop(target_name, axis = 1, inplace= True)
+
+# the_table = _plot_table(m[0:n_columns], axs)
+
+
+# plt.show()
