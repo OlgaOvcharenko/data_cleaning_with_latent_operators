@@ -10,7 +10,6 @@ from transformation_in_x import apply_transformation_in_x
 from latent_operator_train_loop import LatentTrainLoop
 
 
-
 def create_and_train_LOP(train_dataset, val_dataset, x_dim, z_dim, K, K2, T, epochs= 100, lr = 0.001, model_name="test"):
  
     base_path = f'./MODELS/{model_name}/{T}_{x_dim}_{z_dim}_{K}_epochs_{epochs}/'
@@ -81,4 +80,4 @@ def create_and_train_classifier(train_dataset, val_dataset, inp_dim, z_dim, T, n
     else:
         nnreg_model.load_weights(f'{base_path}classifier.keras')
 
-    return nnreg_model
+    return nnreg_model    

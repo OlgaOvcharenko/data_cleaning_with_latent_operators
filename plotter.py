@@ -7,6 +7,7 @@ import numpy as np
 import glob
 import os
 import preprocess
+import matplotlib
 
 parser = argparse.ArgumentParser(description="Disentangled Latent Space Operator for Data Engineering")
 parser.add_argument("--dataset", default='adult')
@@ -17,6 +18,37 @@ parser.add_argument("--y_title", action='store_true')
 parser.add_argument("--x_title", action='store_true')
 
 args = parser.parse_args()
+
+
+
+
+
+
+
+def maximize_plot():
+    #save maximized################
+    manager = plt.get_current_fig_manager()
+    if matplotlib.get_backend() == "TkAgg":
+        manager.resize(*manager.window.maxsize())
+    elif matplotlib.get_backend() == "QT":
+        manager.window.showMaximized()
+    else:
+        manager.frame.Maximize(True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def plot_basic(dataset, experiment, plot_type = 'point'):
 
@@ -118,16 +150,15 @@ def _plot_ablation(df, experiment, x_variable, x_title, plot_type, palette):
 def _plot_ablation_rmse(df, experiment, x_variable, x_title, plot_type, palette):
 
     if plot_type == 'point':
-       # g = sns.catplot(data = df, x = x_variable, y = 'value', hue = 'Model', errorbar = None, marker=['D','o', '*'], kind = args.type, palette=palette, linewidth=1.5)
-        g = sns.lineplot(data = df, x = x_variable, y = 'value', hue = 'Model', errorbar = None, palette=palette, linewidth=1.5)
-        #plt.grid()
+        g = sns.lineplot(data = df, x = x_variable, y = 'value', hue = 'Model', errorbar = None, palette=palette, linewidth=3, marker='o')
     else:
         g = sns.catplot(data = df, x = x_variable, y = 'value', hue = 'Model', errorbar = None, kind = args.type, palette=palette, linewidth=1.5)
-      
+
+    maximize_plot()
     g.legend_.remove()
     plt.xlabel(x_title)
     plt.ylabel('RMSE (lowers is better)')
-    plt.autoscale()
+    #plt.autoscale()
     plt.tight_layout()        
     plt.savefig(f'./evaluation/ablation_studies/plots/rmse_{experiment}.svg')
     plt.show()
@@ -282,6 +313,8 @@ def _plot_rein(dataset, data_type = "numeric", metric = "f1"):
     if not args.legend:
         plt.legend('',frameon=False)
 
+    maximize_plot()
+        
     plt.autoscale()
     plt.tight_layout()
 
@@ -308,7 +341,6 @@ def plot_rein_categorical(dataset):
     _plot_rein(dataset, "categorical", "recall")
 
 
-
 def plot_tuple_wise(dataset, data_type = "numeric"):
     df = pd.read_csv(f'./DATASETS_REIN/rein_{dataset}_tuple_wise_cleaning_results.csv')
     df_lop = pd.read_csv(f'./evaluation/ablation_studies/rmse_tuples_{args.dataset}.csv')
@@ -322,27 +354,26 @@ def plot_tuple_wise(dataset, data_type = "numeric"):
 
     #concatenate both datasets, sorting is done by the plot itself
     dss = pd.concat([df, df_lop])
-    
+
     #reduce datapoints for the paper image
-    dss = dss[dss["train_size"] != 15000.0]
-    dss = dss[dss["train_size"] != 25000.0]
-    dss = dss[dss["train_size"] != 35000.0]
-    dss = dss[dss["train_size"] != 40000.0]
+    dss = dss[dss["train_size"] < 45000.0]
 
-    dss.loc[dss["train_size"] == 45222.0, "train_size"] = "all tuples"
+    #dss.loc[dss["train_size"] == 45222.0, "train_size"] = "all tuples"
     
-    fig, ax = plt.subplots()
-    
-    g = sns.barplot(data = dss, x = 'train_size', y = 'onlyNum_rmse_repaired', hue = 'ds', errorbar = None,  linewidth=1.5, ax = ax, palette='Spectral')#, marker=['D','o', '*'])
+    fig, ax1 = plt.subplots()
 
+    g = sns.lineplot(data = dss, x = 'train_size',  y = 'onlyNum_rmse_repaired',  errorbar = None, marker='o', palette="Spectral", linewidth=3, ax = ax1, hue = 'ds')
+
+    maximize_plot()
+    
     plt.xlabel('Number of Training Tuples')
     plt.ylabel('RMSE (lower is better)')
 
-    plt.ylim(0.0 , 1.6)
+    ax1.set(ylim=(0, 2.0))
 
     plt.legend(loc='best', bbox_to_anchor=(1, 0.8), frameon= False, title = '')
     plt.xticks(rotation=45, ha="right")
-    plt.autoscale()
+    #plt.autoscale()
     plt.tight_layout()
     
     plt.savefig(f'./evaluation/ablation_studies/plots/rein_comparision_tuple_wise_{args.dataset}.svg')
@@ -384,11 +415,15 @@ def plot_time_vs_rmse(dataset):
 
     g2 = sns.lineplot(x = time_latent["param"], y = time_latent["lop_numeric"],  errorbar = None, marker='o', color=palette["lop_numeric"], linewidth=2.5, ax = ax2)
 
+
     ax2.set(ylim=(0, 1))
         
     ax1.set(xlabel = 'Dimensionality of the latent space (per column)')
     ax1.set(ylabel='Time to train in minutes')
     ax2.set(ylabel='F1 score on data cleaning')
+
+    maximize_plot()
+    
     plt.tight_layout()        
     plt.savefig(f'./evaluation/ablation_studies/plots/time_latent_{args.dataset}.svg')
     plt.show()
@@ -408,19 +443,28 @@ def plot_time_vs_rmse(dataset):
     ax1.set(xlabel = 'Number of transformations (K)')
     ax1.set(ylabel='Time to train in minutes')
     ax2.set(ylabel='F1 score on data cleaning')
+
+    maximize_plot()
+    
     plt.tight_layout()        
     plt.savefig(f'./evaluation/ablation_studies/plots/time_ks_{args.dataset}.svg')
     plt.show()
 
 
 
-if args.experiment == "vs_dirty_percentages" : 
-    plot_basic(args.dataset, args.experiment, args.type)
-elif args.experiment == "vs_dirty" : 
-    plot_all_datasets(["adult", "beers", "bikes", "smart_factory", "soccer_OR", "soccer_PLAYER"], args.experiment)#, args.type)
-elif args.experiment == "ablation":
-    plot_ablation_studies(args.dataset, args.type)
-elif args.experiment == "ablation_rmse":
+
+
+
+
+
+#CHOOSE THE PLOT ##########################################    
+#if args.experiment == "vs_dirty_percentages" : 
+#    plot_basic(args.dataset, args.experiment, args.type)
+#elif args.experiment == "vs_dirty" : 
+#    plot_all_datasets(["adult", "beers", "bikes", "smart_factory", "soccer_OR", "soccer_PLAYER"], args.experiment)#, args.type)
+#elif args.experiment == "ablation":
+#    plot_ablation_studies(args.dataset, args.type)
+if args.experiment == "ablation_rmse":
     plot_ablation_studies_rmse(args.dataset, args.type)
 elif args.experiment == "compare_to_rein_numeric":
     plot_rein_numeric(args.dataset)

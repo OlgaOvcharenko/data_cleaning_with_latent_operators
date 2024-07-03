@@ -14,7 +14,7 @@ import pandas as pd
 
 from tensorflow.keras import Input, Model, Sequential
 from tensorflow.keras.layers import Dense, Concatenate
-from datasets import get_tf_database, load_regression, load_regression_dirty, load_features_and_data, reverse_categorical_columns, reverse_to_input_domain
+from datasets import get_tf_database, load_regression, load_regression_dirty, load_features_and_data, reverse_categorical_columns, reverse_to_input_domain, get_date_columns
 from latent_operators import LatentOperator
 from transformation_in_x import apply_transformation_in_x, include_errors_at_random
 from utils import create_and_train_LOP, create_and_train_classifier
@@ -268,12 +268,15 @@ if n_cat_cols > 0:
 
 dirty_data[filtered_header] = df_cleaned[filtered_header]#clean_csv
 lop_data = reverse_to_input_domain(args.dataset, dirty_data, FULL_SCALER, CAT_ENCODER)
+
+#replace the date columns
+lop_data = get_date_columns(ds, lop_data, dirty_data)
+
 lop_data.to_csv(f'./DATASETS_REIN/{args.dataset}/LOP.csv', index = False)
 
 
 
 ###EVALUATE REIN################################################################################
-
 rmse_dirty, rmse_repaired = cln.evaluate(f"./DATASETS_REIN/{args.dataset}/clean.csv",
                                          f"./DATASETS_REIN/{args.dataset}/dirty01.csv",
                                          f"./DATASETS_REIN/{args.dataset}/LOP.csv",
@@ -301,7 +304,6 @@ if not os.path.isdir("./evaluation"):
 for_plots.to_csv(f'./evaluation/rein_rmse_{args.dataset}.csv')
 
 ########### WRITE DETECTION DICTIONARY ##########
-
 #get row and column where there is no error (i.e. k = 0 = identity or equal to K)
 detection_dictionary_indexes = tf.where(tf.math.logical_or(tf.equal(Ks_csv, 0), tf.equal(Ks_csv, K)))
 det_idx = detection_dictionary_indexes.numpy()

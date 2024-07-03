@@ -4,6 +4,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 import csv
 import sys
+import matplotlib
 import matplotlib.pyplot as plt
 import time
 import tensorflow as tf
@@ -23,6 +24,7 @@ from utils import create_and_train_LOP, create_and_train_classifier
 from error_detection import predict_on_enhanced, eval_correctly, eval_numeric_rmse
 from sklearn.metrics import mean_squared_error, accuracy_score, f1_score, precision_score, recall_score
 from copy import deepcopy
+from plotter import maximize_plot
 
 parser = argparse.ArgumentParser(description="Disentangled Latent Space Operator for Data Engineering")
 parser.add_argument("--epochs", type=int, default=80)
@@ -134,11 +136,22 @@ def generate_qualitative_data(Zs, decoder, transpose = False):
     else:
         return tf.squeeze(decoder(tf.unstack(Zs, axis = 1)))
 
+
+
+
+
+
 Zs = encoder(tf.convert_to_tensor(clean_data, dtype=tf.float32))
+repaired_data = generate_qualitative_data(Zs, decoder, True)
+repaired_data = pd.DataFrame(repaired_data.numpy(), columns = clean_data.columns)
+
+
+
+
 
 
 #moves a column by K steps#########################
-col = 3
+cols_to_change = [4, 5, 6, 7]
 input_domain_data = []
 n_columns = clean_data.shape[1]
 z_list = []
@@ -147,37 +160,46 @@ for c in range(clean_data.shape[1]):
     aux = []
     for r in range(clean_data.shape[0]):
         a = Zs[c][r]
-        if c == col:
+        if c in cols_to_change:
             aux.append(LOP.translate_operator(a, shift=11))
         else:
             aux.append(a)
     z_list.append(tf.expand_dims(tf.convert_to_tensor(aux, dtype=tf.float32), axis = 0))
 
 Zs_shifted = tf.squeeze(tf.convert_to_tensor(z_list, dtype=tf.float32))
-####################################################
 
-repaired_data = generate_qualitative_data(Zs, decoder, True)
-repaired_data = pd.DataFrame(repaired_data.numpy(), columns = clean_data.columns)
-
+#recover the shifted data
 shifted_data = generate_qualitative_data(Zs_shifted, decoder, True)
 shifted_data = pd.DataFrame(shifted_data.numpy(), columns = clean_data.columns)
 
+#encode the shifted data
+Zs_final = encoder(tf.convert_to_tensor(shifted_data[filtered_header], dtype=tf.float32))
 
-#clean_data = clean_data[numeric_header]
-#repaired_data = repaired_data[numeric_header]
-#shifted_data = shifted_data[numeric_header]
-
-clean_data = clean_data.iloc[:,1:8]
-repaired_data = repaired_data.iloc[:,1:8]
-shifted_data = shifted_data.iloc[:,1:8]
+#get final results fro mthe shifted data
+shifted_data = generate_qualitative_data(Zs_shifted, decoder, True)
+shifted_data = pd.DataFrame(shifted_data.numpy(), columns = clean_data.columns)
+####################################################
 
 
-sns.color_palette("tab10")
-sns.boxplot(data = pd.concat([clean_data, repaired_data, shifted_data], keys=('clean', 'repaired', 'shifted')).stack().rename_axis(index=['dataset', '', 'Column labels']).reset_index(level=[0,2], name='Column values'), x='Column labels', hue='dataset', y='Column values', showfliers = False)
+
+#too mnay columns to show
+clean_data = clean_data.iloc[:, 1:8]
+repaired_data = repaired_data.iloc[:, 1:8]
+shifted_data = shifted_data.iloc[:, 1:8]
+
+
+sns.boxplot(data = pd.concat([repaired_data, shifted_data], keys=('original', 'shifted')).stack().rename_axis(index=['dataset', '', 'Column labels']).reset_index(level=[0,2], name='Column values'), x='Column labels', hue='dataset', y='Column values', showfliers = False, palette = "Set2", width=0.3, linewidth= 0.8, showcaps = False, whis = 0)
+
+#sns.violinplot(data = pd.concat([repaired_data, shifted_data], keys=('clean', 'reconstructed', 'shifted')).stack().rename_axis(index=['dataset', '', 'Column labels']).reset_index(level=[0,2], name='Column values'), x='Column labels', hue='dataset', y='Column values', cut = 0, fill=False)
+
+maximize_plot()
 
 plt.tight_layout()
 plt.autoscale()
+plt.savefig(f'./evaluation/plots/qualitative_evaluation_{ds}_{len(cols_to_change)}.svg')
 plt.show()
+
+
 
 
 

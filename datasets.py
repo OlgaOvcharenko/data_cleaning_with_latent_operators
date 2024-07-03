@@ -242,14 +242,6 @@ def load_features_and_data(ds, n_instances, n_test_instances, missing, scaler, C
 
 
 
-
-
-
-
-
-
-
-
 def reverse_categorical_columns(ds, data, label_encoder):
     dataset_config = _get_data_config()
     return pr.reverse_categorical_columns(ds, data, label_encoder, dataset_config)
@@ -298,4 +290,29 @@ def prepare_data_subset(df, ds, missing, scaler, CAT_ENCODER, normalize_y = Fals
 
 
     return df
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def get_date_columns(ds, target_dataset, full_dataset):
+    dataset_config = _get_data_config()
+    dates = dataset_config[ds]["date_cols"]
+    target_dataset[dates] = full_dataset[dates]
+    return target_dataset
 
