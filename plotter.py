@@ -362,7 +362,7 @@ def plot_tuple_wise(dataset, data_type = "numeric"):
     
     fig, ax1 = plt.subplots()
 
-    g = sns.lineplot(data = dss, x = 'train_size',  y = 'onlyNum_rmse_repaired',  errorbar = None, marker='o', palette="Spectral", linewidth=3, ax = ax1, hue = 'ds')
+    g = sns.lineplot(data = dss, x = 'train_size',  y = 'onlyNum_rmse_repaired',  errorbar = None, marker='o', palette="Set2", linewidth=1.8, ax = ax1, hue = 'ds', ms = 7)
 
     maximize_plot()
     
@@ -370,6 +370,8 @@ def plot_tuple_wise(dataset, data_type = "numeric"):
     plt.ylabel('RMSE (lower is better)')
 
     ax1.set(ylim=(0, 2.0))
+    
+    plt.yticks()
 
     plt.legend(loc='best', bbox_to_anchor=(1, 0.8), frameon= False, title = '')
     plt.xticks(rotation=45, ha="right")
@@ -398,7 +400,7 @@ def plot_time_vs_rmse(dataset):
 
     time_ks = time_ks[1:] # drop K = 1 because there is no cleaning
 
-    palette = {'lop_numeric': '#00B3AD', 'sec': '#FFB3AD'}
+    palette = {'lop_numeric': '#00B3AD', 'sec': '#FF5F5D'}
     
     #melt all columns into value
     #df_ks = df_ks.melt(id_vars='param', var_name='Model')
@@ -406,21 +408,38 @@ def plot_time_vs_rmse(dataset):
     #time_ks = time_ks.melt(id_vars='param', var_name='Model')
     #time_latent = time_latent.melt(id_vars='param', var_name='Model')
 
+    plt.rc('font', size=13) 
+    
     #latent plot
     fig, ax1 = plt.subplots()
 
-    g = sns.lineplot(x = time_latent["param"],  y = time_latent["sec"],  errorbar = None, marker='o', palette=palette["sec"], linewidth=2.5, ax = ax1)
+
+    g = sns.lineplot(x = time_latent["param"],  y = time_latent["sec"],  errorbar = None, marker='o', palette=palette["sec"], color = palette["sec"],  linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=6)
 
     ax2 = plt.twinx()
 
-    g2 = sns.lineplot(x = time_latent["param"], y = time_latent["lop_numeric"],  errorbar = None, marker='o', color=palette["lop_numeric"], linewidth=2.5, ax = ax2)
+    g2 = sns.lineplot(x = time_latent["param"], y = time_latent["lop_numeric"],  errorbar = None, marker='o', color=palette["lop_numeric"], linewidth=1.5, ax = ax2, markeredgewidth=0.0, ms=6)
 
 
     ax2.set(ylim=(0, 1))
-        
     ax1.set(xlabel = 'Dimensionality of the latent space (per column)')
     ax1.set(ylabel='Time to train in minutes')
     ax2.set(ylabel='F1 score on data cleaning')
+  
+    #color
+    ax1.spines['top'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['left'].set_color(palette["sec"])
+    ax2.spines['right'].set_color(palette["lop_numeric"])
+
+    ax1.tick_params(axis='y', colors=palette["sec"])
+    #ax1.tick_params(axis='y', labelsize=15)
+    ax2.tick_params(axis='y', colors=palette["lop_numeric"])
+    #ax2.tick_params(axis='y', labelsize=15)
+    ax1.yaxis.label.set_color(palette["sec"])
+    ax2.yaxis.label.set_color(palette["lop_numeric"])
+
+    plt.yticks()
 
     maximize_plot()
     
@@ -431,18 +450,30 @@ def plot_time_vs_rmse(dataset):
     #K version of the plot
     fig, ax1 = plt.subplots()
     
-    g = sns.lineplot(x = time_ks["param"], y = time_ks["sec"],  errorbar = None, marker='o', palette=palette["sec"], linewidth=2.5, ax = ax1)
+    g = sns.lineplot(x = time_ks["param"], y = time_ks["sec"],  errorbar = None, marker='o', palette=palette["sec"], color = palette["sec"], linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=6)
 
     ax2 = plt.twinx()
 
-    g2 = sns.lineplot(x = time_ks["param"], y = time_ks["lop_numeric"],  errorbar = None, marker='o', color=palette["lop_numeric"], linewidth=2.5, ax = ax2)
+    g2 = sns.lineplot(x = time_ks["param"], y = time_ks["lop_numeric"],  errorbar = None, marker='o', color=palette["lop_numeric"], linewidth=1.5, ax = ax2, markeredgewidth=0.0, ms=6)
 
     ax1.set(ylim=(0, 20))
-    ax2.set(ylim=(0, 2))
-        
+    ax2.set(ylim=(0, 2))        
     ax1.set(xlabel = 'Number of transformations (K)')
     ax1.set(ylabel='Time to train in minutes')
     ax2.set(ylabel='F1 score on data cleaning')
+
+    #color
+    ax1.spines['top'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['left'].set_color(palette["sec"])
+    ax2.spines['right'].set_color(palette["lop_numeric"])
+
+    ax1.tick_params(axis='y', colors=palette["sec"])
+    #ax1.tick_params(axis='y', labelsize=15)
+    ax2.tick_params(axis='y', colors=palette["lop_numeric"])
+    #ax2.tick_params(axis='y', labelsize=15)
+    ax1.yaxis.label.set_color(palette["sec"])
+    ax2.yaxis.label.set_color(palette["lop_numeric"])
 
     maximize_plot()
     

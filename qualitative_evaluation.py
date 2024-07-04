@@ -140,18 +140,14 @@ def generate_qualitative_data(Zs, decoder, transpose = False):
 
 
 
-
+#encode and decode the original data
 Zs = encoder(tf.convert_to_tensor(clean_data, dtype=tf.float32))
 repaired_data = generate_qualitative_data(Zs, decoder, True)
 repaired_data = pd.DataFrame(repaired_data.numpy(), columns = clean_data.columns)
 
 
-
-
-
-
 #moves a column by K steps#########################
-cols_to_change = [4, 5, 6, 7]
+cols_to_change = [6, 7]
 input_domain_data = []
 n_columns = clean_data.shape[1]
 z_list = []
@@ -168,31 +164,40 @@ for c in range(clean_data.shape[1]):
 
 Zs_shifted = tf.squeeze(tf.convert_to_tensor(z_list, dtype=tf.float32))
 
-#recover the shifted data
+#project the shifted data in the data space
 shifted_data = generate_qualitative_data(Zs_shifted, decoder, True)
 shifted_data = pd.DataFrame(shifted_data.numpy(), columns = clean_data.columns)
 
-#encode the shifted data
+#encode the shifted data again
 Zs_final = encoder(tf.convert_to_tensor(shifted_data[filtered_header], dtype=tf.float32))
 
-#get final results fro mthe shifted data
+#get final results for the shifted data
 shifted_data = generate_qualitative_data(Zs_shifted, decoder, True)
 shifted_data = pd.DataFrame(shifted_data.numpy(), columns = clean_data.columns)
 ####################################################
 
 
 
+#get the actual values to compare
+pd.set_option('display.max_columns', None)
+print(reverse_to_input_domain(args.dataset, repaired_data, FULL_SCALER, CAT_ENCODER).head(), "\n\n",
+      reverse_to_input_domain(args.dataset, shifted_data, FULL_SCALER, CAT_ENCODER).head())
+
+
 #too mnay columns to show
-clean_data = clean_data.iloc[:, 1:8]
+#clean_data = clean_data.iloc[:, 1:8]
 repaired_data = repaired_data.iloc[:, 1:8]
 shifted_data = shifted_data.iloc[:, 1:8]
 
 
-sns.boxplot(data = pd.concat([repaired_data, shifted_data], keys=('original', 'shifted')).stack().rename_axis(index=['dataset', '', 'Column labels']).reset_index(level=[0,2], name='Column values'), x='Column labels', hue='dataset', y='Column values', showfliers = False, palette = "Set2", width=0.3, linewidth= 0.8, showcaps = False, whis = 0)
+fig, ax1 = plt.subplots()
+
+sns.boxplot(data = pd.concat([repaired_data, shifted_data], keys=('original', 'shifted')).stack().rename_axis(index=['dataset', '', 'Column labels']).reset_index(level=[0,2], name='Column values'), x='Column labels', hue='dataset', y='Column values', showfliers = False, palette = "Set2", width=0.3, linewidth= 0.8, showcaps = False, whis = 0, ax= ax1)
 
 #sns.violinplot(data = pd.concat([repaired_data, shifted_data], keys=('clean', 'reconstructed', 'shifted')).stack().rename_axis(index=['dataset', '', 'Column labels']).reset_index(level=[0,2], name='Column values'), x='Column labels', hue='dataset', y='Column values', cut = 0, fill=False)
 
 maximize_plot()
+plt.setp(ax1.get_xticklabels(), rotation=30, horizontalalignment='right')
 
 plt.tight_layout()
 plt.autoscale()
