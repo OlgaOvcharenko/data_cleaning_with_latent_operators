@@ -414,7 +414,7 @@ def plot_time_vs_rmse(dataset):
     fig, ax1 = plt.subplots()
 
 
-    g = sns.lineplot(x = time_latent["param"],  y = time_latent["sec"],  errorbar = None, marker='o', palette=palette["sec"], color = palette["sec"],  linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=6)
+    g = sns.lineplot(x = time_latent["param"],  y = time_latent["sec"],  errorbar = None, marker='o', color = palette["sec"],  linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=6)
 
     ax2 = plt.twinx()
 
@@ -450,7 +450,7 @@ def plot_time_vs_rmse(dataset):
     #K version of the plot
     fig, ax1 = plt.subplots()
     
-    g = sns.lineplot(x = time_ks["param"], y = time_ks["sec"],  errorbar = None, marker='o', palette=palette["sec"], color = palette["sec"], linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=6)
+    g = sns.lineplot(x = time_ks["param"], y = time_ks["sec"],  errorbar = None, marker='o', color = palette["sec"], linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=6)
 
     ax2 = plt.twinx()
 

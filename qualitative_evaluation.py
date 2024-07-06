@@ -13,7 +13,7 @@ import numpy as np
 import argparse
 import pandas as pd
 import seaborn as sns
-
+from pathlib import Path
 
 from tensorflow.keras import Input, Model, Sequential
 from tensorflow.keras.layers import Dense, Concatenate
@@ -136,61 +136,72 @@ def generate_qualitative_data(Zs, decoder, transpose = False):
     else:
         return tf.squeeze(decoder(tf.unstack(Zs, axis = 1)))
 
-
-
-
-
-#encode and decode the original data
-Zs = encoder(tf.convert_to_tensor(clean_data, dtype=tf.float32))
-repaired_data = generate_qualitative_data(Zs, decoder, True)
-repaired_data = pd.DataFrame(repaired_data.numpy(), columns = clean_data.columns)
-
-
-#moves a column by K steps#########################
 cols_to_change = [6, 7]
 input_domain_data = []
 n_columns = clean_data.shape[1]
 z_list = []
 
-for c in range(clean_data.shape[1]):
-    aux = []
-    for r in range(clean_data.shape[0]):
-        a = Zs[c][r]
-        if c in cols_to_change:
-            aux.append(LOP.translate_operator(a, shift=11))
-        else:
-            aux.append(a)
-    z_list.append(tf.expand_dims(tf.convert_to_tensor(aux, dtype=tf.float32), axis = 0))
+#check if the experiment exists
+quali_file = Path(f'./evaluation/repaired_data_{ds}_{len(cols_to_change)}.csv')
+if not quali_file.is_file():
+    #encode and decode the original data
+    Zs = encoder(tf.convert_to_tensor(clean_data, dtype=tf.float32))
+    repaired_data = generate_qualitative_data(Zs, decoder, True)
+    repaired_data = pd.DataFrame(repaired_data.numpy(), columns = clean_data.columns)
 
-Zs_shifted = tf.squeeze(tf.convert_to_tensor(z_list, dtype=tf.float32))
+    #moves a column by K steps#########################
+    for c in range(clean_data.shape[1]):
+        aux = []
+        for r in range(clean_data.shape[0]):
+            a = Zs[c][r]
+            if c in cols_to_change:
+                aux.append(LOP.translate_operator(a, shift=11))
+            else:
+                aux.append(a)
+        z_list.append(tf.expand_dims(tf.convert_to_tensor(aux, dtype=tf.float32), axis = 0))
 
-#project the shifted data in the data space
-shifted_data = generate_qualitative_data(Zs_shifted, decoder, True)
-shifted_data = pd.DataFrame(shifted_data.numpy(), columns = clean_data.columns)
+    Zs_shifted = tf.squeeze(tf.convert_to_tensor(z_list, dtype=tf.float32))
 
-#encode the shifted data again
-Zs_final = encoder(tf.convert_to_tensor(shifted_data[filtered_header], dtype=tf.float32))
+    #project the shifted data in the data space
+    shifted_data = generate_qualitative_data(Zs_shifted, decoder, True)
+    shifted_data = pd.DataFrame(shifted_data.numpy(), columns = clean_data.columns)
 
-#get final results for the shifted data
-shifted_data = generate_qualitative_data(Zs_shifted, decoder, True)
-shifted_data = pd.DataFrame(shifted_data.numpy(), columns = clean_data.columns)
-####################################################
+    #encode the shifted data again
+    Zs_final = encoder(tf.convert_to_tensor(shifted_data[filtered_header], dtype=tf.float32))
+
+    #get final results for the shifted data
+    shifted_data = generate_qualitative_data(Zs_shifted, decoder, True)
+    shifted_data = pd.DataFrame(shifted_data.numpy(), columns = clean_data.columns)
+
+    shifted_data.to_csv(f'./evaluation/shifted_data_{ds}_{len(cols_to_change)}.csv', index= False)
+    repaired_data.to_csv(f'./evaluation/repaired_data_{ds}_{len(cols_to_change)}.csv', index = False)
 
 
+else:
+    shifted_data = pd.read_csv(f'./evaluation/shifted_data_{ds}_{len(cols_to_change)}.csv')
+    repaired_data = pd.read_csv(f'./evaluation/repaired_data_{ds}_{len(cols_to_change)}.csv')
+###############################################################################
 
 #get the actual values to compare
 pd.set_option('display.max_columns', None)
-print(reverse_to_input_domain(args.dataset, repaired_data, FULL_SCALER, CAT_ENCODER).head(), "\n\n",
-      reverse_to_input_domain(args.dataset, shifted_data, FULL_SCALER, CAT_ENCODER).head())
+print(reverse_to_input_domain(args.dataset, repaired_data, FULL_SCALER, CAT_ENCODER).head(), "\n\n", reverse_to_input_domain(args.dataset, shifted_data, FULL_SCALER, CAT_ENCODER).head())
 
 
-#too mnay columns to show
+#too many columns to show
 #clean_data = clean_data.iloc[:, 1:8]
 repaired_data = repaired_data.iloc[:, 1:8]
 shifted_data = shifted_data.iloc[:, 1:8]
 
 
 fig, ax1 = plt.subplots()
+
+
+if len(cols_to_change) == 2 :
+    #separator for 2 shifts
+    ax1.axvline(ax1.get_xticks()[2] + 4.1, color='k', linestyle =  '--')
+elif len(cols_to_change) == 4 :
+    #separator for 4 shifts
+    ax1.axvline(ax1.get_xticks()[5] + 1.5, color='k', linestyle =  '--')
 
 sns.boxplot(data = pd.concat([repaired_data, shifted_data], keys=('original', 'shifted')).stack().rename_axis(index=['dataset', '', 'Column labels']).reset_index(level=[0,2], name='Column values'), x='Column labels', hue='dataset', y='Column values', showfliers = False, palette = "Set2", width=0.3, linewidth= 0.8, showcaps = False, whis = 0, ax= ax1)
 
