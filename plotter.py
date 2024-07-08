@@ -383,12 +383,30 @@ def plot_tuple_wise(dataset, data_type = "numeric"):
 
 
 
-def plot_time_vs_rmse(dataset):
-
+def plot_time_vs_rmse(dataset, inference = False):
+   
+    # we drop K =  0 because there is no cleaning
     df_ks = pd.read_csv(f'./evaluation/ablation_studies/rmse_ks_{args.dataset}.csv', usecols=["param", "lop_numeric"])[1:]
     df_latent = pd.read_csv(f'./evaluation/ablation_studies/rmse_latents_{args.dataset}.csv',usecols=["param", "lop_numeric"])
-    time_ks = pd.read_csv(f'./evaluation/ablation_studies/time_to_train_k_{args.dataset}.csv',usecols=["param", "sec"])
-    time_latent = pd.read_csv(f'./evaluation/ablation_studies/time_to_train_latent_{args.dataset}.csv', usecols=["param", "sec"])
+
+    if inference:
+        # we drop K =  0 because there is no cleaning
+        time_ks = pd.read_csv(f'./evaluation/ablation_studies/rmse_ks_{args.dataset}.csv', usecols=["param", "inference_time"])[1:]
+        time_latent = pd.read_csv(f'./evaluation/ablation_studies/rmse_latents_{args.dataset}.csv', usecols=["param", "inference_time"])
+        latent_filename =  f'./evaluation/ablation_studies/plots/inference_time_latent_{args.dataset}.svg'
+        ks_filename = f'./evaluation/ablation_studies/plots/inference_time_ks_{args.dataset}.svg'
+        time_ks.rename(columns={"inference_time": "sec"}, inplace = True)
+        time_latent.rename(columns={"inference_time": "sec"}, inplace = True)
+        y_label = "Time to clean in minutes"
+        
+
+    else:
+        # we drop K =  0 because there is no cleaning
+        time_ks = pd.read_csv(f'./evaluation/ablation_studies/time_to_train_k_{args.dataset}.csv', usecols=["param", "sec"])[1:]
+        time_latent = pd.read_csv(f'./evaluation/ablation_studies/time_to_train_latent_{args.dataset}.csv', usecols=["param", "sec"])
+        latent_filename =  f'./evaluation/ablation_studies/plots/time_latent_{args.dataset}.svg'
+        ks_filename = f'./evaluation/ablation_studies/plots/time_ks_{args.dataset}.svg'
+        y_label = 'Time to train in minutes'
 
     #in minutes
     time_latent['sec'] = time_latent['sec'] / 60
@@ -398,33 +416,28 @@ def plot_time_vs_rmse(dataset):
     time_latent = pd.concat([time_latent, df_latent['lop_numeric']], axis = 1)
     time_ks = pd.concat([time_ks, df_ks['lop_numeric']], axis = 1)
 
-    time_ks = time_ks[1:] # drop K = 1 because there is no cleaning
+    #time_ks = time_ks[1:] # drop K = 1 because there is no cleaning
 
     palette = {'lop_numeric': '#00B3AD', 'sec': '#FF5F5D'}
     
-    #melt all columns into value
-    #df_ks = df_ks.melt(id_vars='param', var_name='Model')
-    #df_latent = df_latent.melt(id_vars='param', var_name='Model')
-    #time_ks = time_ks.melt(id_vars='param', var_name='Model')
-    #time_latent = time_latent.melt(id_vars='param', var_name='Model')
-
-    plt.rc('font', size=13) 
+    plt.rc('font', size=17) 
     
     #latent plot
     fig, ax1 = plt.subplots()
 
 
-    g = sns.lineplot(x = time_latent["param"],  y = time_latent["sec"],  errorbar = None, marker='o', color = palette["sec"],  linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=6)
+    g = sns.lineplot(x = time_latent["param"],  y = time_latent["sec"],  errorbar = None, marker='o', color = palette["sec"],  linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=7)
 
     ax2 = plt.twinx()
 
-    g2 = sns.lineplot(x = time_latent["param"], y = time_latent["lop_numeric"],  errorbar = None, marker='o', color=palette["lop_numeric"], linewidth=1.5, ax = ax2, markeredgewidth=0.0, ms=6)
+    g2 = sns.lineplot(x = time_latent["param"], y = time_latent["lop_numeric"],  errorbar = None, marker="^", color=palette["lop_numeric"], linewidth=1.5, ax = ax2, markeredgewidth=0.0, ms=7)
 
 
+    ax1.set(ylim=(0, 25))
     ax2.set(ylim=(0, 1))
     ax1.set(xlabel = 'Dimensionality of the latent space (per column)')
-    ax1.set(ylabel='Time to train in minutes')
-    ax2.set(ylabel='F1 score on data cleaning')
+    ax1.set(ylabel=y_label)
+    ax2.set(ylabel='RMSE on data cleaning \n (lower is better)')
   
     #color
     ax1.spines['top'].set_visible(False)
@@ -433,9 +446,7 @@ def plot_time_vs_rmse(dataset):
     ax2.spines['right'].set_color(palette["lop_numeric"])
 
     ax1.tick_params(axis='y', colors=palette["sec"])
-    #ax1.tick_params(axis='y', labelsize=15)
     ax2.tick_params(axis='y', colors=palette["lop_numeric"])
-    #ax2.tick_params(axis='y', labelsize=15)
     ax1.yaxis.label.set_color(palette["sec"])
     ax2.yaxis.label.set_color(palette["lop_numeric"])
 
@@ -444,23 +455,23 @@ def plot_time_vs_rmse(dataset):
     maximize_plot()
     
     plt.tight_layout()        
-    plt.savefig(f'./evaluation/ablation_studies/plots/time_latent_{args.dataset}.svg')
+    plt.savefig(latent_filename)
     plt.show()
 
     #K version of the plot
     fig, ax1 = plt.subplots()
     
-    g = sns.lineplot(x = time_ks["param"], y = time_ks["sec"],  errorbar = None, marker='o', color = palette["sec"], linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=6)
+    g = sns.lineplot(x = time_ks["param"], y = time_ks["sec"],  errorbar = None, marker='o', color = palette["sec"], linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=7)
 
     ax2 = plt.twinx()
 
-    g2 = sns.lineplot(x = time_ks["param"], y = time_ks["lop_numeric"],  errorbar = None, marker='o', color=palette["lop_numeric"], linewidth=1.5, ax = ax2, markeredgewidth=0.0, ms=6)
+    g2 = sns.lineplot(x = time_ks["param"], y = time_ks["lop_numeric"],  errorbar = None, marker="^", color=palette["lop_numeric"], linewidth=1.5, ax = ax2, markeredgewidth=0.0, ms=7)
 
-    ax1.set(ylim=(0, 20))
+    ax1.set(ylim=(0, 25))
     ax2.set(ylim=(0, 2))        
     ax1.set(xlabel = 'Number of transformations (K)')
-    ax1.set(ylabel='Time to train in minutes')
-    ax2.set(ylabel='F1 score on data cleaning')
+    ax1.set(ylabel=y_label)
+    ax2.set(ylabel='RMSE on data cleaning \n (lower is better)')
 
     #color
     ax1.spines['top'].set_visible(False)
@@ -469,16 +480,14 @@ def plot_time_vs_rmse(dataset):
     ax2.spines['right'].set_color(palette["lop_numeric"])
 
     ax1.tick_params(axis='y', colors=palette["sec"])
-    #ax1.tick_params(axis='y', labelsize=15)
     ax2.tick_params(axis='y', colors=palette["lop_numeric"])
-    #ax2.tick_params(axis='y', labelsize=15)
     ax1.yaxis.label.set_color(palette["sec"])
     ax2.yaxis.label.set_color(palette["lop_numeric"])
 
     maximize_plot()
     
     plt.tight_layout()        
-    plt.savefig(f'./evaluation/ablation_studies/plots/time_ks_{args.dataset}.svg')
+    plt.savefig(ks_filename)
     plt.show()
 
 
@@ -505,3 +514,6 @@ elif args.experiment == "tuplewise":
     plot_tuple_wise(args.dataset)
 elif args.experiment == "performance":
     plot_time_vs_rmse(args.dataset)
+elif args.experiment == "performance_inference":
+    plot_time_vs_rmse(args.dataset, inference = True)
+

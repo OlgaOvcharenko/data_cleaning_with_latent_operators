@@ -136,7 +136,7 @@ def generate_qualitative_data(Zs, decoder, transpose = False):
     else:
         return tf.squeeze(decoder(tf.unstack(Zs, axis = 1)))
 
-cols_to_change = [6, 7]
+cols_to_change = [4, 5, 6, 7]
 input_domain_data = []
 n_columns = clean_data.shape[1]
 z_list = []
