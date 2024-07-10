@@ -241,8 +241,7 @@ def _plot_rein(dataset, data_type = "numeric", metric = "f1"):
     df['cleaner'] = df['cleaner'].replace(regex=['decisionTree'], value='DT')
     df['cleaner'] = df['cleaner'].replace(regex=['bayesianRidge'], value='BR')
     df.drop(df[df['cleaner'] == "SI delete"].index, inplace=True)
-
-
+   
     #SAME COLORS ACROSS ALL PLOTS###########################    
     # create an array with all unique categories from the 'mode' column in all dataframes
     all_files = glob.glob("./DATASETS_REIN/rein_*_cleaning_results.csv")
@@ -258,6 +257,9 @@ def _plot_rein(dataset, data_type = "numeric", metric = "f1"):
 
     #for the legend to be sorted
     df.sort_values(by=['detector', 'cleaner'], inplace = True)
+
+    #drop the "cleanWithGroundTruth" because they seem incomplete in REIN.
+    df = df[df["cleaner"] != "cleanWithGroundTruth"]
     
 
     if data_type == "numeric":
@@ -342,6 +344,8 @@ def plot_rein_categorical(dataset):
 
 
 def plot_tuple_wise(dataset, data_type = "numeric"):
+    plt.rc('font', size=14) 
+    
     df = pd.read_csv(f'./DATASETS_REIN/rein_{dataset}_tuple_wise_cleaning_results.csv')
     df_lop = pd.read_csv(f'./evaluation/ablation_studies/rmse_tuples_{args.dataset}.csv')
     df.drop(df.columns.difference(['detector', 'train_size','onlyNum_rmse_repaired', 'onlyCat_f']), 1, inplace=True)
@@ -418,7 +422,7 @@ def plot_time_vs_rmse(dataset, inference = False):
 
     #time_ks = time_ks[1:] # drop K = 1 because there is no cleaning
 
-    palette = {'lop_numeric': '#00B3AD', 'sec': '#FF5F5D'}
+    palette = {'lop_numeric': '#00BFAE', 'sec': '#802922'}
     
     plt.rc('font', size=17) 
     
@@ -426,14 +430,14 @@ def plot_time_vs_rmse(dataset, inference = False):
     fig, ax1 = plt.subplots()
 
 
-    g = sns.lineplot(x = time_latent["param"],  y = time_latent["sec"],  errorbar = None, marker='o', color = palette["sec"],  linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=7)
+    g = sns.lineplot(x = time_latent["param"],  y = time_latent["sec"],  errorbar = None, marker='o', color = palette["sec"],  linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=10)
 
     ax2 = plt.twinx()
 
-    g2 = sns.lineplot(x = time_latent["param"], y = time_latent["lop_numeric"],  errorbar = None, marker="^", color=palette["lop_numeric"], linewidth=1.5, ax = ax2, markeredgewidth=0.0, ms=7)
+    g2 = sns.lineplot(x = time_latent["param"], y = time_latent["lop_numeric"],  errorbar = None, marker="^", color=palette["lop_numeric"], linewidth=1.5, ax = ax2, markeredgewidth=0.0, ms=12)
 
 
-    ax1.set(ylim=(0, 25))
+    ax1.set(ylim=(5, 28))
     ax2.set(ylim=(0, 1))
     ax1.set(xlabel = 'Dimensionality of the latent space (per column)')
     ax1.set(ylabel=y_label)
@@ -453,6 +457,8 @@ def plot_time_vs_rmse(dataset, inference = False):
     plt.yticks()
 
     maximize_plot()
+
+    ax1.grid(True, axis='y')
     
     plt.tight_layout()        
     plt.savefig(latent_filename)
@@ -461,13 +467,13 @@ def plot_time_vs_rmse(dataset, inference = False):
     #K version of the plot
     fig, ax1 = plt.subplots()
     
-    g = sns.lineplot(x = time_ks["param"], y = time_ks["sec"],  errorbar = None, marker='o', color = palette["sec"], linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=7)
+    g = sns.lineplot(x = time_ks["param"], y = time_ks["sec"],  errorbar = None, marker='o', color = palette["sec"], linewidth=1.5, ax = ax1, markeredgewidth=0.0, ms=10)
 
     ax2 = plt.twinx()
 
-    g2 = sns.lineplot(x = time_ks["param"], y = time_ks["lop_numeric"],  errorbar = None, marker="^", color=palette["lop_numeric"], linewidth=1.5, ax = ax2, markeredgewidth=0.0, ms=7)
+    g2 = sns.lineplot(x = time_ks["param"], y = time_ks["lop_numeric"],  errorbar = None, marker="^", color=palette["lop_numeric"], linewidth=1.5, ax = ax2, markeredgewidth=0.0, ms=12)
 
-    ax1.set(ylim=(0, 25))
+    ax1.set(ylim=(10, 25))
     ax2.set(ylim=(0, 2))        
     ax1.set(xlabel = 'Number of transformations (K)')
     ax1.set(ylabel=y_label)
@@ -485,6 +491,8 @@ def plot_time_vs_rmse(dataset, inference = False):
     ax2.yaxis.label.set_color(palette["lop_numeric"])
 
     maximize_plot()
+
+    ax1.grid(True, axis='y')
     
     plt.tight_layout()        
     plt.savefig(ks_filename)
