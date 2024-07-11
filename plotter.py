@@ -362,18 +362,19 @@ def plot_tuple_wise(dataset, data_type = "numeric"):
     #reduce datapoints for the paper image
     dss = dss[dss["train_size"] < 45000.0]
 
-    #dss.loc[dss["train_size"] == 45222.0, "train_size"] = "all tuples"
+    plt.rc('font', size=14)
     
     fig, ax1 = plt.subplots()
 
-    g = sns.lineplot(data = dss, x = 'train_size',  y = 'onlyNum_rmse_repaired',  errorbar = None, marker='o', palette="Set2", linewidth=1.8, ax = ax1, hue = 'ds', ms = 7)
+    g = sns.lineplot(data = dss, x = 'train_size',  y = 'onlyNum_rmse_repaired',  errorbar = None, markers={'LOP': "^", 'Best Baseline': '*'}, style='ds', palette="Set2", linewidth=1.8, ax = ax1, hue = 'ds', ms = 14)
 
     maximize_plot()
     
     plt.xlabel('Number of Training Tuples')
     plt.ylabel('RMSE (lower is better)')
 
-    ax1.set(ylim=(0, 2.0))
+    ax1.set(ylim=(0.5, 1.6))
+    ax1.grid(True, axis='y')
     
     plt.yticks()
 
