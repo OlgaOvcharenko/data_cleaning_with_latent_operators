@@ -249,7 +249,7 @@ def _plot_rein(dataset, data_type = "numeric", metric = "f1"):
     detectors = df_colors['detector'].unique()
 
     # create a color palette for the number of values in modes
-    colors = sns.color_palette('Set2', len(detectors))
+    colors = sns.color_palette('Set3', len(detectors))
 
     # create a dictionary of modes and colors
     detectors_palette = dict(zip(detectors, colors))
@@ -366,7 +366,7 @@ def plot_tuple_wise(dataset, data_type = "numeric"):
     
     fig, ax1 = plt.subplots()
 
-    g = sns.lineplot(data = dss, x = 'train_size',  y = 'onlyNum_rmse_repaired',  errorbar = None, markers={'LOP': "^", 'Best Baseline': '*'}, style='ds', palette="Set2", linewidth=1.8, ax = ax1, hue = 'ds', ms = 14)
+    g = sns.lineplot(data = dss, x = 'train_size',  y = 'onlyNum_rmse_repaired',  errorbar = None, markers={'LOP': "^", 'Best Baseline': '*'}, style='ds', palette="Set3", linewidth=1.8, ax = ax1, hue = 'ds', ms = 14)
 
     maximize_plot()
     
@@ -504,6 +504,116 @@ def plot_time_vs_rmse(dataset, inference = False):
 
 
 
+def plot_averages_on_numeric():
+
+    df_list = []
+    lop_list = []
+
+    for dts in ["adult", "har", "nasa", "smart_factory", "soccer_PLAYER", "smart_factory", "bikes"]:
+        df_list.append(pd.read_csv(f'./DATASETS_REIN/rein_{dts}_cleaning_results.csv'))
+        lop_list.append(pd.read_csv(f'./evaluation/rein_rmse_{dts}.csv'))
+
+    df = pd.concat(df_list, axis=0)
+    lop = pd.concat(lop_list, axis=0)
+
+    LOP_AVG = sum(lop['rmse_numeric']) / len(lop)
+   
+    df.drop(df.columns.difference(['detector', 'cleaner','onlyNum_rmse_repaired']), 1, inplace=True)
+
+    df.dropna(inplace=True)
+
+    #RAHA results in a different format in the REIN benchmark
+    for raha_ds in ["adult", "soccer_PLAYER", "har"]:
+        df_raha = pd.read_csv(f'./DATASETS_REIN/rein_{raha_ds}_raha.csv')
+        df_raha.rename(columns={"tool_name": "cleaner"}, inplace= True)
+        df_raha["detector"] = "raha"
+        df_raha.drop(df_raha.columns.difference(['detector', 'cleaner','onlyNum_rmse_repaired']), 1, inplace=True)
+        df_raha.sort_index(axis=1, inplace=True)
+        df.sort_index(axis=1, inplace=True)
+        df = pd.concat([df, df_raha], ignore_index=True)
+
+
+    #fix the model names
+    df['cleaner'] = df['cleaner'].replace(regex=['standardImputer-'], value='SI ')
+    df['cleaner'] = df['cleaner'].replace(regex=['mlImputer-'], value='ML ')
+    df['cleaner'] = df['cleaner'].replace(regex=['seperate-'], value='')
+    df['cleaner'] = df['cleaner'].replace(regex=['-dummy'], value='')
+    df['cleaner'] = df['cleaner'].replace(regex=['separate-'], value='ML ')
+    df['cleaner'] = df['cleaner'].replace(regex=['impute-'], value='')
+    df['cleaner'] = df['cleaner'].replace(regex=['missForest'], value='MF')
+    df['cleaner'] = df['cleaner'].replace(regex=['decisionTree'], value='DT')
+    df['cleaner'] = df['cleaner'].replace(regex=['bayesianRidge'], value='BR')
+    df['detector'] = df['detector'].replace(regex=['outlierdetector_'], value='outlierdet_')
+    df['detector'] = df['detector'].replace(regex=['outlierdetector_'], value='outlierdet_')
+    df.drop(df[df['cleaner'] == "SI delete"].index, inplace=True)
+
+
+    #drop the "cleanWithGroundTruth" because they seem incomplete in REIN., the average was 1.34
+    df = df[df["cleaner"] != "cleanWithGroundTruth"]        
+    
+    #CALCULATE AVERAGES ##############################################
+    #average per error detector method
+    DF_DETECTOR_AVG = df.groupby('detector').mean().sort_values("onlyNum_rmse_repaired")
+    #average per error repair method
+    DF_CLEANER_AVG = df.groupby('cleaner').mean().sort_values("onlyNum_rmse_repaired")
+
+    print(LOP_AVG, DF_DETECTOR_AVG,  DF_CLEANER_AVG)
+
+    #PLOT###########################################
+    plt.rc('font', size=17) 
+
+    #fig, ax = plt.subplots(figsize=(5, 3))
+    fig, ax = plt.subplots() 
+
+    #for the legend to be sorted
+    df.sort_values(by=['detector', 'cleaner'], inplace = True)
+
+    
+    #MIX THE AVERAGES TOGETHER TO PLOT ONCE FOR ALL METHODS ###################################
+    AVGS = pd.concat([DF_CLEANER_AVG, DF_DETECTOR_AVG], axis = 0, ignore_index=False)
+    AVGS = AVGS.reset_index().rename(columns={"index":"method"})
+    AVGS.sort_values(by=['method'], inplace = True)
+
+    g = sns.barplot(data = AVGS, x = 'method', y = 'onlyNum_rmse_repaired', errorbar = None,  linewidth=1.5, ax = ax, color = "lightseagreen")
+
+    plt.axhline(y = LOP_AVG, color = 'k', linestyle = '--')
+    plt.xlabel('Data Cleaning Baseline')
+    plt.ylabel('RMSE (lower is better)')
+
+    legend_elements  =  [Line2D([0], [0], linestyle='--', color='k', label='LOP', markerfacecolor='k', markersize=15)]
+        
+    plt.ylim(0.5 , 2.2)
+
+    #g.set_box_aspect(0.5) #change 10 to modify the y/x axis ratio
+
+    if args.legend:
+        legend1 = plt.legend(handles = legend_elements, loc='center left', bbox_to_anchor=(0.9, 0.95), frameon= False)
+        plt.gca().add_artist(legend1)
+
+    plt.xticks(rotation=45, ha="right")
+
+    if not args.legend:
+        plt.legend('',frameon=False)
+
+    maximize_plot()
+
+    #ax.grid(True, axis='y')
+        
+    plt.autoscale()
+    plt.tight_layout()
+
+    if not args.x_title:
+        plt.xlabel('')
+    if not args.y_title:
+        plt.ylabel('')
+
+    plt.savefig(f'./evaluation/plots/average_comparision.svg')
+
+    plt.show()
+    return g
+
+
+
 
 
 #CHOOSE THE PLOT ##########################################    
@@ -525,4 +635,7 @@ elif args.experiment == "performance":
     plot_time_vs_rmse(args.dataset)
 elif args.experiment == "performance_inference":
     plot_time_vs_rmse(args.dataset, inference = True)
+elif args.experiment == "average_on_numeric":
+    plot_averages_on_numeric()
+
 

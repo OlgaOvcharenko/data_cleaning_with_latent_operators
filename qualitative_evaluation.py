@@ -136,7 +136,7 @@ def generate_qualitative_data(Zs, decoder, transpose = False):
     else:
         return tf.squeeze(decoder(tf.unstack(Zs, axis = 1)))
 
-cols_to_change = [4, 5, 6, 7]
+cols_to_change = [6, 7]
 input_domain_data = []
 n_columns = clean_data.shape[1]
 z_list = []
@@ -192,6 +192,7 @@ print(reverse_to_input_domain(args.dataset, repaired_data, FULL_SCALER, CAT_ENCO
 repaired_data = repaired_data.iloc[:, 1:8]
 shifted_data = shifted_data.iloc[:, 1:8]
 
+plt.rc('font', size=14)
 
 fig, ax1 = plt.subplots()
 
@@ -203,9 +204,7 @@ elif len(cols_to_change) == 4 :
     #separator for 4 shifts
     ax1.axvline(ax1.get_xticks()[5] + 1.5, color='k', linestyle =  '--')
 
-sns.boxplot(data = pd.concat([repaired_data, shifted_data], keys=('original', 'shifted')).stack().rename_axis(index=['dataset', '', 'Column labels']).reset_index(level=[0,2], name='Column values'), x='Column labels', hue='dataset', y='Column values', showfliers = False, palette = "Set2", width=0.3, linewidth= 0.8, showcaps = False, whis = 0, ax= ax1)
-
-#sns.violinplot(data = pd.concat([repaired_data, shifted_data], keys=('clean', 'reconstructed', 'shifted')).stack().rename_axis(index=['dataset', '', 'Column labels']).reset_index(level=[0,2], name='Column values'), x='Column labels', hue='dataset', y='Column values', cut = 0, fill=False)
+sns.boxplot(data = pd.concat([repaired_data, shifted_data], keys=('Original', 'Reconstructed')).stack().rename_axis(index=['Dataset', '', 'Column labels']).reset_index(level=[0,2], name='Column values'), x='Column labels', hue='Dataset', y='Column values', showfliers = False, palette = "Set2", width=0.3, linewidth= 0.8, showcaps = False, whis = 0, ax= ax1)
 
 maximize_plot()
 plt.setp(ax1.get_xticklabels(), rotation=30, horizontalalignment='right')
