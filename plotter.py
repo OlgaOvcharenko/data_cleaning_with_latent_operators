@@ -219,7 +219,7 @@ def _plot_rein(dataset, data_type = "numeric", metric = "f1"):
     df.drop(df.columns.difference(['detector', 'cleaner','onlyNum_rmse_repaired', 'onlyCat_f',  'onlyCat_p',  'onlyCat_r']), 1, inplace=True)
     
     #received the RAHA results in a different format from REIN benchmark
-    if dataset == "adult" or dataset == "soccer_PLAYER" or dataset == "har":
+    if dataset == "adult" or dataset == "har":
         df_raha = pd.read_csv(f'./DATASETS_REIN/rein_{args.dataset}_raha.csv')
         df_raha.rename(columns={"tool_name": "cleaner"}, inplace= True)
         df_raha["detector"] = "raha"
@@ -523,7 +523,7 @@ def plot_averages_on_numeric():
     df.dropna(inplace=True)
 
     #RAHA results in a different format in the REIN benchmark
-    for raha_ds in ["adult", "soccer_PLAYER", "har"]:
+    for raha_ds in ["adult", "har"]:
         df_raha = pd.read_csv(f'./DATASETS_REIN/rein_{raha_ds}_raha.csv')
         df_raha.rename(columns={"tool_name": "cleaner"}, inplace= True)
         df_raha["detector"] = "raha"
@@ -560,10 +560,11 @@ def plot_averages_on_numeric():
     print(LOP_AVG, DF_DETECTOR_AVG,  DF_CLEANER_AVG)
 
     #PLOT###########################################
-    plt.rc('font', size=17) 
+    plt.rc('font', size=20) 
 
     #fig, ax = plt.subplots(figsize=(5, 3))
-    fig, ax = plt.subplots() 
+    #fig, ax = plt.subplots(figsize=(6, 3))
+    fig, ax = plt.subplots()
 
     #for the legend to be sorted
     df.sort_values(by=['detector', 'cleaner'], inplace = True)
@@ -578,16 +579,15 @@ def plot_averages_on_numeric():
 
     plt.axhline(y = LOP_AVG, color = 'k', linestyle = '--')
     plt.xlabel('Data Cleaning Baseline')
-    plt.ylabel('RMSE (lower is better)')
+    plt.ylabel('Average RMSE (lower is better)')
 
     legend_elements  =  [Line2D([0], [0], linestyle='--', color='k', label='LOP', markerfacecolor='k', markersize=15)]
         
-    plt.ylim(0.5 , 2.2)
+    plt.ylim(0.0 , 2.2)
 
-    #g.set_box_aspect(0.5) #change 10 to modify the y/x axis ratio
 
     if args.legend:
-        legend1 = plt.legend(handles = legend_elements, loc='center left', bbox_to_anchor=(0.9, 0.95), frameon= False)
+        legend1 = plt.legend(handles = legend_elements, loc='center left', bbox_to_anchor=(0.88, 0.95), frameon= False)
         plt.gca().add_artist(legend1)
 
     plt.xticks(rotation=45, ha="right")
@@ -599,7 +599,7 @@ def plot_averages_on_numeric():
 
     #ax.grid(True, axis='y')
         
-    plt.autoscale()
+    #plt.autoscale()
     plt.tight_layout()
 
     if not args.x_title:
