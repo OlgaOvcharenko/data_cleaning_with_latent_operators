@@ -240,6 +240,7 @@ def _plot_rein(dataset, data_type = "numeric", metric = "f1"):
     df['cleaner'] = df['cleaner'].replace(regex=['missForest'], value='MF')
     df['cleaner'] = df['cleaner'].replace(regex=['decisionTree'], value='DT')
     df['cleaner'] = df['cleaner'].replace(regex=['bayesianRidge'], value='BR')
+    df['detector'] = df['detector'].replace(regex=['dBoost'], value='dboost')
     df.drop(df[df['cleaner'] == "SI delete"].index, inplace=True)
    
     #SAME COLORS ACROSS ALL PLOTS###########################    
@@ -560,7 +561,7 @@ def plot_averages_on_numeric():
     print(LOP_AVG, DF_DETECTOR_AVG,  DF_CLEANER_AVG)
 
     #PLOT###########################################
-    plt.rc('font', size=20) 
+    plt.rc('font', size=26) 
 
     #fig, ax = plt.subplots(figsize=(5, 3))
     #fig, ax = plt.subplots(figsize=(6, 3))
@@ -583,7 +584,7 @@ def plot_averages_on_numeric():
 
     legend_elements  =  [Line2D([0], [0], linestyle='--', color='k', label='LOP', markerfacecolor='k', markersize=15)]
         
-    plt.ylim(0.0 , 2.2)
+    plt.ylim(0.0 , 2.5)
 
 
     if args.legend:
