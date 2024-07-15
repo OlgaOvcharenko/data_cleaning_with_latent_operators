@@ -560,6 +560,9 @@ def plot_averages_on_numeric():
 
     print(LOP_AVG, DF_DETECTOR_AVG,  DF_CLEANER_AVG)
 
+    DF_DETECTOR_AVG["color"] = 0
+    DF_CLEANER_AVG["color"] = 1
+
     #PLOT###########################################
     plt.rc('font', size=26) 
 
@@ -574,13 +577,13 @@ def plot_averages_on_numeric():
     #MIX THE AVERAGES TOGETHER TO PLOT ONCE FOR ALL METHODS ###################################
     AVGS = pd.concat([DF_CLEANER_AVG, DF_DETECTOR_AVG], axis = 0, ignore_index=False)
     AVGS = AVGS.reset_index().rename(columns={"index":"method"})
-    AVGS.sort_values(by=['method'], inplace = True)
+    AVGS.sort_values(by=['color'], inplace = True)
 
-    g = sns.barplot(data = AVGS, x = 'method', y = 'onlyNum_rmse_repaired', errorbar = None,  linewidth=1.5, ax = ax, color = "lightseagreen")
+    g = sns.barplot(data = AVGS, x = 'method', y = 'onlyNum_rmse_repaired', errorbar = None,  linewidth=1.5, ax = ax, hue = "color")
 
     plt.axhline(y = LOP_AVG, color = 'k', linestyle = '--')
     plt.xlabel('Data Cleaning Baseline')
-    plt.ylabel('Average RMSE (lower is better)')
+    plt.ylabel('Average RMSE \n (lower is better)')
 
     legend_elements  =  [Line2D([0], [0], linestyle='--', color='k', label='LOP', markerfacecolor='k', markersize=15)]
         
