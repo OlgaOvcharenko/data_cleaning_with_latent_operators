@@ -1,5 +1,5 @@
 # Generalizable Data Cleaning of Tabular Data in Latent Space
-![Alt](PAPERequivarence.pdf)
+![Alt](PAPERequivarence.png)
 Code repository for the LOP paper on data cleaning. 
 
 ## Setup
