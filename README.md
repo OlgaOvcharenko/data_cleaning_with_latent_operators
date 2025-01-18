@@ -1,6 +1,6 @@
 ## Generalizable Data Cleaning of Tabular Data in Latent Space
-![](https://github.com/DataManagementLab/data_cleaning_with_latent_operators/PAPERequivarence.png?raw=true)
-Code repository for the LOP paper on data cleaning. 
+<p align="center">
+<img src="https://github.com/DataManagementLab/data_cleaning_with_latent_operators/blob/main/PAPERequivariance.png?raw=true" width="360" height="300">
 
 ## Setup
 We provided the REIN benchmark  data used for the paper as is, in **rein_data.zip**. Once the data is decompressed to the **DATASETS_REIN/** folder, one must create a python 3 environment and install the dependencies listed on **requirements.txt**. Next, a new LOP model can be trained on any dataset as long as its configuration is mapped to the **datasets.py** script.
