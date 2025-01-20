@@ -6,6 +6,7 @@ import preprocess as pr
 from sklearn import preprocessing
 from copy import deepcopy
 from sklearn.preprocessing import StandardScaler
+import json
 
 def _to_tf(X,Y, batchsize):
     _dataset = tf.data.Dataset.from_tensor_slices((X, Y))
@@ -16,21 +17,9 @@ def get_tf_database(data, target, batchsize):
     return _to_tf(data, target , batchsize)
 
 def _get_data_config():
-    return {
-        "bikes": {"id_cols": ["instant"], "cat_cols": [], "date_cols": ["dteday"], "target": "cnt", "float_cols": ["temp", "atemp", "hum", "windspeed"], "allow_negatives": []}, #REIN version date is already ok
-        "smart_factory": {"id_cols": [], "cat_cols": [], "date_cols":[], "target": "labels", "float_cols": [],"allow_negatives": ["i_w_bhr_weg", "i_w_blo_weg", "i_w_bru_weg", "i_w_hr_weg", "i_w_hl_weg", "i_w_bhl_weg"]},
-        "water": {"id_cols": ["index"], "cat_cols": [], "date_cols":[], "target": "x38"}, #RANDOM TARGET BECAUSE IT IS A clustering TASK
-        "adult": {"id_cols": [], "cat_cols": ["workclass", "education", "marital_status", "occupation", "relationship", "gender", "native_country","race"], "date_cols":[], "target": "income" , "float_cols": [], "allow_negatives": []},
-        "beers": {"id_cols": ["index", "id", "brewery_id", "beer_name"], "cat_cols": ["city",  "state", "brewery_name", "style"], "date_cols": [], "target": "style"},
-        "breast_cancer": {"id_cols":  ["Sample code number"],"cat_cols": [], "date_cols": [], "target": "class"},
-        "soilmoisture": {"id_cols": [], "cat_cols": [], "date_cols": [("datetime", None)], "target": "soil_moisture"},
-        "airbnb": {"id_cols": [], "cat_cols": ["LocationName", "Rating"], "date_cols": [], "target": "Price"},
-        #"soccer_OR": {"id_cols": ['id_x'], "cat_cols": ["player_name", "attacking_work_rate", "preferred_foot"], "date_cols": ["date", "birthday"], "target": "overall_rating", "float_cols": ["height"], "allow_negatives": []},
-        "soccer_PLAYER": {"id_cols": ['id_x'], "cat_cols": ["player_name", "attacking_work_rate", "preferred_foot"], "date_cols": ["date", "birthday"], "target": "overall_rating", "float_cols": ["height"], "allow_negatives": []},
-        "nasa": {"id_cols": [], "cat_cols": [], "date_cols": [], "target": "sound_pressure_level", "float_cols": ["frequency", "angle", "chord_length", "velocity", "thickness", "sound_pressure_level"], "allow_negatives": []},
-        "har": {"id_cols": ["Index"], "cat_cols": ["gt"], "date_cols": [], "target": "gt", "float_cols": ["x", "y", "z"], "allow_negatives": ["x", "y", "z"]}
-    }
-
+    with open('dataset_configuration.json', 'r') as file:
+        data = file.read()
+    return json.loads(data)
 
 def split_numerical_and_categorical_columns(ds, filtered_header):
     dataset_config = _get_data_config()
@@ -38,7 +27,6 @@ def split_numerical_and_categorical_columns(ds, filtered_header):
     # must do the loop to keep the order
     categorical_header = [i for i in filtered_header if i in dataset_config[ds]["cat_cols"]]
     return numeric_header, categorical_header
-
 
 def _normalize_by_min_max(df, min_x, max_x):
     norm = (max_x - min_x) + 1e-10 #only breaks if MAX = MIN, so we need some noise
@@ -76,10 +64,10 @@ def _replace_nan(df, missing):
     df = df.fillna(missing)
     return df
 
-def load_regression(ds, n_train_instances, n_test_instances, normalize_y = False, normalize_sklearn = True):
+def load_regression(ds, n_train_instances, n_test_instances, normalize_y = False, normalize_sklearn = True,  path_to_dataset = "DATASETS_REIN"):
     scaler = StandardScaler()
     dataset_config = _get_data_config()
-    clean_dir = f"DATASETS_REIN/{ds}/"
+    clean_dir = f"{path_to_dataset}/{ds}/"
     df = pd.read_csv(os.path.join(clean_dir, 'clean.csv'))
 
     df, CAT_ENCODER = pr.preprocess(df,
@@ -151,11 +139,11 @@ def load_regression_dirty(ds, n_train_instances, n_test_instances, missing, scal
 
     return X_train, y_train, X_test, y_test
 
-def load_features_and_data(ds, n_instances, n_test_instances, missing, scaler, CAT_ENCODER,  normalize_y = False, MAX = None, MIN = None, normalize_sklearn = True):
+def load_features_and_data(ds, n_instances, n_test_instances, missing, scaler, CAT_ENCODER,  normalize_y = False, MAX = None, MIN = None, normalize_sklearn = True,  path_to_dataset = "DATASETS_REIN"):
     
     dataset_config = _get_data_config()
 
-    clean_dir = f"DATASETS_REIN/{ds}/"
+    clean_dir = f"{path_to_dataset}/{ds}/"
     df = pd.read_csv(os.path.join(clean_dir, 'dirty01.csv')) [0:n_instances]
     df_clean = pd.read_csv(os.path.join(clean_dir, 'clean.csv')) [0:n_instances]
 
@@ -292,27 +280,8 @@ def prepare_data_subset(df, ds, missing, scaler, CAT_ENCODER, normalize_y = Fals
     return df
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def get_date_columns(ds, target_dataset, full_dataset):
     dataset_config = _get_data_config()
     dates = dataset_config[ds]["date_cols"]
     target_dataset[dates] = full_dataset[dates]
     return target_dataset
-
