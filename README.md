@@ -4,6 +4,19 @@
 <img src="https://github.com/DataManagementLab/data_cleaning_with_latent_operators/blob/main/PAPERequivariance.png?raw=true" width="420" height="360">
 
 ## Citation
+Please use the following BibTeX code to cite our [paper](https://www.vldb.org/pvldb/vol17/p4786-reis.pdf), which is accepted for presentation at [VLDB 2024](https://vldb.org/pvldb/volumes/17#issue-13):
+```
+@inproceedings{lopster2024,  
+title       = {Generalizable Data Cleaning of Tabular Data in Latent Space},  
+author      = {Eduardo dos Reis, Mohamed Abdelaal and Carsten Binnig},  
+journal     = {Proceedings of the VLDB Endowment},  
+volume      = {17},  
+number      = {13},  
+pages       = {4786--4798},  
+year        = {2024},  
+publisher   = {VLDB Endowment}  
+}
+```
 
 ## Data cleaning on your own dataset
 We provided the training and cleaning in a single script **lopster.py**. 
